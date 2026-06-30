@@ -5,6 +5,7 @@
 /dist
 /docs/.vitepress/cache
 /docs/node_modules
+/debug/data/*.json
 
 .npmrc
 

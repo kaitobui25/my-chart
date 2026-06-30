@@ -10,21 +10,29 @@ body,
   margin: 0;
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   overflow: hidden;
   background: #ffffff;
 }
 
 #chart {
+  position: relative;
   width: 100%;
-  height: calc(100% - 44px);
+  flex: 1;
+  min-height: 0;
 }
 
 #toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  height: 44px;
+  min-height: 44px;
   padding: 0 12px;
   border-bottom: 1px solid #e6e8eb;
   background: #ffffff;
@@ -32,7 +40,7 @@ body {
   font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-#period-switcher {
+.segmented-control {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -42,11 +50,136 @@ body {
   background: #f6f8fa;
 }
 
-#period-switcher button,
-#load-forward,
-#add-backward {
+.segmented-control button {
   height: 28px;
   padding: 0 12px;
+  min-width: 42px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  border-color: transparent;
+  background: transparent;
+  color: #1f2328;
+  cursor: pointer;
+}
+
+#candle-mode-switcher button {
+  min-width: 74px;
+}
+
+.segmented-control button.active {
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+}
+
+.segmented-control button:hover {
+  background: #eef2f6;
+}
+
+.segmented-control button.active:hover {
+  background: #0969da;
+}
+
+#load-status {
+  color: #57606a;
+}
+
+.settings-menu {
+  position: relative;
+  height: 30px;
+}
+
+.settings-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #f7f9fb;
+  color: #1f2328;
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-menu summary:hover,
+.settings-menu[open] summary {
+  background: #eef2f6;
+}
+
+.settings-menu[open] summary {
+  border-color: #0969da;
+}
+
+.settings-dropdown {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 50;
+  min-width: 150px;
+  padding: 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(31, 35, 40, 0.14);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  white-space: nowrap;
+}
+
+.settings-toggle input {
+  margin: 0;
+}
+
+#indicator-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#indicator-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.indicator-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.indicator-control.hidden {
+  color: #6e7781;
+  background: #f6f8fa;
+}
+
+.indicator-name {
+  min-width: 30px;
+  font-weight: 600;
+}
+
+.indicator-control button {
+  height: 24px;
+  padding: 0 8px;
   border: 1px solid #c9d0d8;
   border-radius: 4px;
   background: #f7f9fb;
@@ -54,34 +187,172 @@ body {
   cursor: pointer;
 }
 
-#period-switcher button {
-  min-width: 42px;
-  border-color: transparent;
-  background: transparent;
-}
-
-#period-switcher button.active {
-  border-color: #0969da;
-  background: #0969da;
-  color: #ffffff;
-}
-
-#period-switcher button:hover,
-#load-forward:hover,
-#add-backward:hover {
+.indicator-control button:hover {
   background: #eef2f6;
 }
 
-#period-switcher button.active:hover {
-  background: #0969da;
+.indicator-control button[data-action="remove"] {
+  color: #cf222e;
 }
 
-#load-forward:disabled,
-#add-backward:disabled {
-  color: #8c959f;
-  cursor: not-allowed;
+.indicator-control .indicator-icon-button,
+.indicator-control .indicator-settings summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
 }
 
-#load-status {
+.indicator-settings {
+  position: relative;
+  height: 24px;
+}
+
+.indicator-settings summary {
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #f7f9fb;
+  color: #1f2328;
+  cursor: pointer;
+  list-style: none;
+}
+
+.indicator-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.indicator-settings summary:hover,
+.indicator-settings[open] summary {
+  background: #eef2f6;
+}
+
+.indicator-settings[open] summary {
+  border-color: #0969da;
+}
+
+.indicator-settings-panel {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  z-index: 60;
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  width: 190px;
+  padding: 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(31, 35, 40, 0.14);
+}
+
+.indicator-settings-panel label {
+  display: grid;
+  gap: 4px;
+  width: 130px;
   color: #57606a;
+  font-size: 12px;
+}
+
+.indicator-settings-panel input {
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  color: #1f2328;
+  font: inherit;
+}
+
+.control-icon {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+.control-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+#restore-indicator-select {
+  height: 30px;
+  min-width: 132px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+}
+
+#real-candle-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  pointer-events: none;
+  font: 12px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#real-candle-overlay.visible {
+  display: block;
+}
+
+.real-candle-range,
+.real-candle-high-price,
+.real-candle-low-price {
+  position: absolute;
+}
+
+.real-candle-range {
+  border: 1px dashed rgba(245, 158, 11, 0.95);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.real-candle-high-price,
+.real-candle-low-price {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  color: #5c3b09;
+  font-variant-numeric: tabular-nums;
+  transform: translateY(-50%);
+}
+
+.real-candle-price-line {
+  position: relative;
+  display: block;
+  flex: 0 0 22px;
+  height: 1px;
+  background: rgba(120, 53, 15, 0.9);
+}
+
+.real-candle-price-line::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 5px;
+  height: 5px;
+  border-top: 1px solid rgba(120, 53, 15, 0.9);
+  border-right: 1px solid rgba(120, 53, 15, 0.9);
+  content: "";
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.real-candle-price-value {
+  min-width: 74px;
+  margin-left: 6px;
+  padding: 1px 5px 2px;
+  border: 1px solid rgba(120, 53, 15, 0.18);
+  border-radius: 3px;
+  background: rgba(255, 251, 235, 0.94);
+  box-shadow: 0 2px 8px rgba(31, 35, 40, 0.1);
 }

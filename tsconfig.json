@@ -1,4 +1,5 @@
 {
+  // cau hinh TypeScript cho du an KLineChart; dung de dinh nghia cach bien dich va kiem tra ma
   "compilerOptions": {
     "strictNullChecks": true,
     "target": "ES5",

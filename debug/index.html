@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,12 +9,35 @@
   <body>
     <div id="root">
       <div id="toolbar">
-        <div id="period-switcher" aria-label="周期切换">
+        <details id="chart-settings" class="settings-menu">
+          <summary aria-label="Chart settings" title="Chart settings">
+            <span aria-hidden="true">&#9881;</span>
+          </summary>
+          <div class="settings-dropdown">
+            <label class="settings-toggle">
+              <input id="grid-visibility-toggle" type="checkbox">
+              <span>Grid layout</span>
+            </label>
+          </div>
+        </details>
+        <div id="period-switcher" class="segmented-control" aria-label="Period">
           <button data-period="1m" type="button">1m</button>
           <button data-period="5m" type="button">5m</button>
           <button data-period="15m" type="button">15m</button>
           <button data-period="1h" type="button">1h</button>
           <button data-period="1d" type="button">1d</button>
+          <button data-period="1w" type="button">1w</button>
+          <button data-period="1M" type="button">1M</button>
+        </div>
+        <div id="candle-mode-switcher" class="segmented-control" aria-label="Candle mode">
+          <button data-candle-mode="normal" type="button">Normal</button>
+          <button data-candle-mode="heikinashi" type="button">Heikin Ashi</button>
+        </div>
+        <div id="indicator-controls" aria-label="Indicators">
+          <div id="indicator-list"></div>
+          <select id="restore-indicator-select" aria-label="Restore indicator">
+            <option value="">Add indicator...</option>
+          </select>
         </div>
       </div>
       <div id="chart"></div>

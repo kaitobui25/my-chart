@@ -1,4 +1,5 @@
 {
+  "_comment": "cau hinh du an va script cho pnpm",
   "name": "klinecharts",
   "version": "10.0.0-beta3",
   "description": "Lightweight k-line chart built with html5 canvas",
@@ -105,6 +106,7 @@
     "shiki": "^2.4.2",
     "tslib": "^2.8.1",
     "typescript": "^5.8.3",
+    "vite": "^8.1.1",
     "vitepress": "2.0.0-alpha.17"
   },
   "pnpm": {

@@ -1,103 +1,99 @@
-<div align="center">
-  <a href="https://klinecharts.com">
-    <img src="https://klinecharts.com/images/logo.svg?hash=89987fs7789" height="100"/>
-  </a>
-</div>
-<h1 align="center">KLineChart</h1>
+# KLineChart
 
-<div align="center">
-English | <a href="https://github.com/liihuu/KLineChart/blob/main/README.zh-CN.md">简体中文</a>
-</div>
-<br/>
+Lightweight k-line chart built with HTML5 canvas.
 
-<p align="center">💹📈 Lightweight k-line chart built with html5 canvas.</p>
-<div align="center">
+[Website](https://klinecharts.com) | [Documentation](https://www.klinecharts.com) | [GitHub Issues](https://github.com/liihuu/KLineChart/issues)
 
-[![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/liihuu/KLineChart/build.yml?logo=github)](https://github.com/liihuu/KLineChart/actions/workflows/build.yml)
-[![Version](https://badgen.net/npm/v/klinecharts)](https://www.npmjs.com/package/klinecharts)
-[![Size](https://badgen.net/bundlephobia/minzip/klinecharts@latest)](https://bundlephobia.com/result?p=klinecharts@latest)
-[![npms.io (maintenance)](https://img.shields.io/npms-io/quality-score/klinecharts)](https://www.npmjs.com/package/klinecharts)
-[![Typescript](https://badgen.net/npm/types/klinecharts)](types/index.d.ts)
-[![LICENSE](https://badgen.net/github/license/liihuu/KLineChart)](LICENSE)
-[![Docs](https://badgen.net/badge/docs%20by/vitepress/bd34fe)](https://vitepress.dev/)
-</div>
+## Features
 
-<div align="center">
+- Lightweight canvas-based candlestick chart.
+- Built-in indicators and drawing overlays.
+- Configurable styles, layout, locale, symbols, periods, and data loading.
+- TypeScript source and type definitions.
+- Mobile-friendly interactions.
 
-[![Issues](https://img.shields.io/static/v1?color=1f2328&logo=github&logoColor=fff&label&message=Github%20Issues)](https://github.com/liihuu/KLineChart/issues)
-[![Discussions](https://img.shields.io/static/v1?color=1f2328&logo=github&logoColor=fff&label&message=Github%20Discussions)](https://github.com/liihuu/KLineChart/discussions)
-[![Telegram](https://img.shields.io/static/v1?color=1296DB&logo=telegram&logoColor=fff&label&message=Telegram)](https://t.me/klinecharts)
-[![Wechat](https://img.shields.io/static/v1?color=1EBE1F&logo=wechat&logoColor=fff&label&message=Wechat)](https://klinecharts.com/en-US/guide/feedback.html)
-<!-- [![Discord](https://img.shields.io/static/v1?color=738BD8&logo=discord&logoColor=fff&label&message=Discord)](https://discord.gg/7YjHYgvvvZ) -->
-<!-- [![Twitter](https://img.shields.io/static/v1?color=1D9BF0&logo=twitter&logoColor=fff&label&message=Twitter)](https://twitter.com/klinecharts) -->
+## Install
 
-
-</div>
-
-<img style="margin-bottom:6px" src="https://cdn.nlark.com/yuque/0/2023/png/8403091/1684399506365-assets/web-upload/044fe897-168c-4fbb-a485-87a8ef61c04a.png" />
-
-
-## ✨ Features
-- 📦 **Out of the box:** Simple and fast integration, basically zero cost to get started.
-- 🚀 **Lightweight and smooth:** Zero dependencies, only 40k under gzip compression.
-- 💪 **Powerful functions:** Built-in multiple indicators and line drawing models.
-- 🎨 **Highly scalable:** With rich style configuration and API, the function can be extended as you like.
-- 📱 **Mobile:** Support mobile, one chart, handle multiple terminals.
-- 🛡 **Typescript development:** Provide complete type definition files.
-
-
-## 📦 Install
-### Using npm
 ```bash
 npm install klinecharts --save
 ```
 
-### Using yarn
 ```bash
 yarn add klinecharts
 ```
 
-### CDNs
-#### [unpkg](https://unpkg.com)
-```html
-<script type="text/javascript" src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
-```
-
-#### [jsDelivr](https://cdn.jsdelivr.net)
-```html
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js"></script>
-```
-
-## 📄 Docs
-### Online
-[https://www.klinecharts.com](https://www.klinecharts.com)
-
-### Locale
-Execute command in root directory. [Node.js](https://nodejs.org) is required.
 ```bash
-# Install the dependencies
-npm install
-
-# Start document service
-npm run docs:dev
+pnpm add klinecharts
 ```
-After successful startup, open in the browser http://localhost:8888 .
 
-## 🛠️ Build
-Execute command in root directory. [Node.js](https://nodejs.org) is required.
+### CDN
+
+```html
+<script src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
+```
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js"></script>
+```
+
+## Local Development
+
+This repository uses `pnpm`. Node.js 22 or newer is required.
+
 ```bash
-# Install the dependencies
-npm install
-
-# Build files
-npm run build
+pnpm install
+node scripts/cache-btcusdt-data.js
+pnpm debug
 ```
-The generated files are in the dist folder.
 
-## 🔗 Links
-+ [KLineChart Preview](https://preview.klinecharts.com): A more complete example.
-+ [KLineChart Pro](https://pro.klinecharts.com): Financial chart built out of the box based on KLineChart.
-+ [openctp](https://github.com/openctp/openctp): Trading simulation environment for the Chinese market.
+The debug app runs from the `debug/` directory. The cache step is required when running the debug server manually; the Windows batch file handles it automatically.
 
-## ©️ License
-KLineChart is available under the Apache License V2.
+## BTCUSDT Debug Chart
+
+For Windows, use the root-level batch file:
+
+```bat
+open-btcusdt-chart.bat
+```
+
+What it does:
+
+- Downloads free BTCUSDT OHLCV data from Binance public API when local cache is missing.
+- Saves cache files to `debug/data/*.json`.
+- Reuses the saved cache on the next run, so it does not download again.
+- Starts the Vite debug chart on `http://127.0.0.1:5173/`.
+- Opens the chart in the default browser.
+
+The debug chart currently includes these cached periods: `1m`, `5m`, `15m`, `1h`, `1d`, `1w`, and `1M`. It can display either normal candles or Heikin Ashi candles from the toolbar. In Heikin Ashi mode, hovering a candle shows a light real high/low overlay for the original candle. The settings menu can hide or show the chart grid. The built-in debug indicators can be hidden, shown, turned off, restored from the indicator dropdown, and configured with custom calculation parameters. Toolbar state is saved in browser storage, so period, candle mode, grid visibility, indicator parameters, and indicator choices survive refreshes and reopening the batch file.
+
+To refresh cached data manually:
+
+```bat
+open-btcusdt-chart.bat refresh
+```
+
+Or run the cache script directly:
+
+```bash
+node scripts/cache-btcusdt-data.js --refresh
+```
+
+The generated JSON cache is ignored by git.
+
+## Build
+
+```bash
+pnpm build
+```
+
+Generated build files are written to `dist/`.
+
+## Docs
+
+```bash
+pnpm docs:dev
+```
+
+## License
+
+KLineChart is available under the Apache License 2.0.
