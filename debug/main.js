@@ -29,6 +29,7 @@ const ICONS = {
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>'
 }
 const DEBUG_STATE_STORAGE_KEY = 'klinecharts.debug.state.v1'
+const PERCENT_RULER_OVERLAY_NAME = 'percentRuler'
 const savedDebugState = readDebugState()
 
 let chart = null
@@ -724,6 +725,27 @@ function restoreManagedIndicator (name) {
   }
 }
 
+function startPercentRuler () {
+  if (chart === null) {
+    return
+  }
+  const id = chart.createOverlay({
+    name: PERCENT_RULER_OVERLAY_NAME,
+    paneId: 'candle_pane'
+  })
+  hideRealCandleOverlay()
+  setStatus(id === null ? 'Unable to start %-Ruler.' : 'Click two points on the candle pane.')
+}
+
+function clearPercentRulers () {
+  if (chart === null) {
+    return
+  }
+  const removed = chart.removeOverlay({ name: PERCENT_RULER_OVERLAY_NAME })
+  hideRealCandleOverlay()
+  setStatus(removed ? 'Cleared percent rulers.' : 'No percent rulers to clear.')
+}
+
 function mountChart () {
   const chartDom = document.getElementById('chart')
   if (chartDom === null) {
@@ -763,6 +785,8 @@ function bindToolbar () {
     const target = event.target
     setGridVisible(target?.checked === true)
   })
+  document.getElementById('percent-ruler-button')?.addEventListener('click', startPercentRuler)
+  document.getElementById('clear-rulers-button')?.addEventListener('click', clearPercentRulers)
   document.getElementById('indicator-list')?.addEventListener('click', event => {
     const target = event.target
     if (typeof target?.closest !== 'function') {

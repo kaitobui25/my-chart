@@ -80,6 +80,27 @@ body {
   background: #0969da;
 }
 
+.debug-button-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debug-button-group button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+  cursor: pointer;
+  font: inherit;
+}
+
+.debug-button-group button:hover {
+  background: #eef2f6;
+}
+
 #load-status {
   color: #57606a;
 }

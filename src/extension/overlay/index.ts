@@ -21,6 +21,7 @@ import horizontalRayLine from './horizontalRayLine'
 import horizontalSegment from './horizontalSegment'
 import horizontalStraightLine from './horizontalStraightLine'
 import parallelStraightLine from './parallelStraightLine'
+import percentRuler from './percentRuler'
 import priceChannelLine from './priceChannelLine'
 import priceLine from './priceLine'
 import rayLine from './rayLine'
@@ -38,7 +39,7 @@ const overlays: Record<string, OverlayInnerConstructor> = {}
 
 const extensions = [
   fibonacciLine, horizontalRayLine, horizontalSegment, horizontalStraightLine,
-  parallelStraightLine, priceChannelLine, priceLine, rayLine, segment,
+  parallelStraightLine, percentRuler, priceChannelLine, priceLine, rayLine, segment,
   straightLine, verticalRayLine, verticalSegment, verticalStraightLine,
   simpleAnnotation, simpleTag, brush
 ]
