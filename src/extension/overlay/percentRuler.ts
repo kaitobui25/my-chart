@@ -2,9 +2,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,6 +13,7 @@
  */
 
 import { SymbolDefaultPrecisionConstants } from '../../common/SymbolInfo'
+import { calcTextWidth } from '../../common/utils/canvas'
 import { isNumber } from '../../common/utils/typeChecks'
 import type { OverlayTemplate } from '../../component/Overlay'
 
@@ -20,10 +21,27 @@ import type { LineAttrs } from '../figure/line'
 import type { RectAttrs } from '../figure/rect'
 import type { TextAttrs } from '../figure/text'
 
-const LABEL_PADDING = 8
-const LABEL_WIDTH = 220
-const LABEL_LINE_HEIGHT = 17
-const LABEL_OFFSET = 10
+const POSITIVE_COLOR = '#089981'
+const POSITIVE_FILL_COLOR = 'rgba(8, 153, 129, 0.12)'
+const POSITIVE_BORDER_COLOR = 'rgba(8, 153, 129, 0.72)'
+const NEGATIVE_COLOR = '#f23645'
+const NEGATIVE_FILL_COLOR = 'rgba(242, 54, 69, 0.12)'
+const NEGATIVE_BORDER_COLOR = 'rgba(242, 54, 69, 0.72)'
+const NEUTRAL_COLOR = '#64748b'
+const NEUTRAL_FILL_COLOR = 'rgba(100, 116, 139, 0.10)'
+const NEUTRAL_BORDER_COLOR = 'rgba(100, 116, 139, 0.65)'
+const LABEL_FONT_SIZE = 12
+const LABEL_FONT_WEIGHT = 600
+const LABEL_HORIZONTAL_PADDING = 8
+const LABEL_VERTICAL_PADDING = 5
+const LABEL_GAP = 8
+const BOUNDING_PADDING = 4
+
+interface RulerPalette {
+  color: string
+  fillColor: string
+  borderColor: string
+}
 
 function clamp (value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
@@ -52,6 +70,38 @@ function formatDuration (duration: number): string {
   return `${duration < 0 ? '-' : ''}${parts.join(' ')}`
 }
 
+function getPalette (priceDelta: number): RulerPalette {
+  if (priceDelta > 0) {
+    return {
+      color: POSITIVE_COLOR,
+      fillColor: POSITIVE_FILL_COLOR,
+      borderColor: POSITIVE_BORDER_COLOR
+    }
+  }
+  if (priceDelta < 0) {
+    return {
+      color: NEGATIVE_COLOR,
+      fillColor: NEGATIVE_FILL_COLOR,
+      borderColor: NEGATIVE_BORDER_COLOR
+    }
+  }
+  return {
+    color: NEUTRAL_COLOR,
+    fillColor: NEUTRAL_FILL_COLOR,
+    borderColor: NEUTRAL_BORDER_COLOR
+  }
+}
+
+function getDirectionSymbol (priceDelta: number): string {
+  if (priceDelta > 0) {
+    return '▲'
+  }
+  if (priceDelta < 0) {
+    return '▼'
+  }
+  return '•'
+}
+
 const percentRuler: OverlayTemplate = {
   name: 'percentRuler',
   totalStep: 3,
@@ -78,86 +128,97 @@ const percentRuler: OverlayTemplate = {
     const duration = isNumber(startPoint.timestamp) && isNumber(endPoint.timestamp)
       ? endPoint.timestamp - startPoint.timestamp
       : 0
-    const visibleRange = chart.getVisibleRange()
-    const visibleBarCount = Math.max(visibleRange.realTo - visibleRange.realFrom, visibleRange.to - visibleRange.from, 1)
-    const horizontalPercent = barCount / visibleBarCount * 100
     const precision = chart.getSymbol()?.pricePrecision ?? SymbolDefaultPrecisionConstants.PRICE
     const formatPrice = (value: number): string => chart.getDecimalFold().format(
       chart.getThousandsSeparator().format(value.toFixed(precision))
     )
-    const labelLines = [
-      `Delta: ${formatPrice(priceDelta)}`,
-      `Price: ${pricePercent === null ? 'n/a' : `${pricePercent.toFixed(2)}%`}`,
-      `Bars: ${barCount}`,
-      `Time: ${formatDuration(duration)}`,
-      `Visible: ${horizontalPercent.toFixed(2)}%`
-    ]
-    const labelHeight = LABEL_PADDING * 2 + labelLines.length * LABEL_LINE_HEIGHT
-    const labelLeftCandidate = endCoordinate.x + LABEL_OFFSET + LABEL_WIDTH <= bounding.width
-      ? endCoordinate.x + LABEL_OFFSET
-      : endCoordinate.x - LABEL_OFFSET - LABEL_WIDTH
-    const labelLeft = clamp(labelLeftCandidate, 4, Math.max(4, bounding.width - LABEL_WIDTH - 4))
-    const labelTop = clamp(
-      Math.min(startCoordinate.y, endCoordinate.y) + LABEL_OFFSET,
-      4,
-      Math.max(4, bounding.height - labelHeight - 4)
-    )
-    const lines: LineAttrs[] = [
-      { coordinates },
-      { coordinates: [startCoordinate, { x: endCoordinate.x, y: startCoordinate.y }] },
-      { coordinates: [{ x: endCoordinate.x, y: startCoordinate.y }, endCoordinate] }
-    ]
-    const rect: RectAttrs = {
-      x: labelLeft,
-      y: labelTop,
-      width: LABEL_WIDTH,
-      height: labelHeight
+    const formattedDelta = `${priceDelta > 0 ? '+' : ''}${formatPrice(priceDelta)}`
+    const formattedPercent = pricePercent === null
+      ? 'n/a'
+      : `${pricePercent > 0 ? '+' : ''}${pricePercent.toFixed(2)}%`
+    const barsText = `${barCount} ${barCount === 1 ? 'bar' : 'bars'}`
+    const label = `${getDirectionSymbol(priceDelta)} ${formattedPercent} · ${formattedDelta} · ${barsText} · ${formatDuration(duration)}`
+    const palette = getPalette(priceDelta)
+
+    const left = Math.min(startCoordinate.x, endCoordinate.x)
+    const right = Math.max(startCoordinate.x, endCoordinate.x)
+    const top = Math.min(startCoordinate.y, endCoordinate.y)
+    const bottom = Math.max(startCoordinate.y, endCoordinate.y)
+    const rangeRect: RectAttrs = {
+      x: left,
+      y: top,
+      width: Math.max(right - left, 1),
+      height: Math.max(bottom - top, 1)
     }
-    const texts: TextAttrs[] = labelLines.map((text, index) => ({
-      x: labelLeft + LABEL_PADDING,
-      y: labelTop + LABEL_PADDING + index * LABEL_LINE_HEIGHT,
-      width: LABEL_WIDTH - LABEL_PADDING * 2,
-      height: LABEL_LINE_HEIGHT,
-      text
-    }))
+    const diagonal: LineAttrs = {
+      coordinates: [startCoordinate, endCoordinate]
+    }
+
+    const measuredLabelWidth = calcTextWidth(label, LABEL_FONT_SIZE, LABEL_FONT_WEIGHT) + LABEL_HORIZONTAL_PADDING * 2
+    const labelWidth = Math.min(measuredLabelWidth, Math.max(1, bounding.width - BOUNDING_PADDING * 2))
+    const labelHeight = LABEL_FONT_SIZE + LABEL_VERTICAL_PADDING * 2
+    const idealLabelCenterX = (left + right) / 2
+    const labelCenterX = clamp(
+      idealLabelCenterX,
+      BOUNDING_PADDING + labelWidth / 2,
+      Math.max(BOUNDING_PADDING + labelWidth / 2, bounding.width - BOUNDING_PADDING - labelWidth / 2)
+    )
+    const hasRoomAbove = top - LABEL_GAP - labelHeight >= BOUNDING_PADDING
+    const idealLabelTop = hasRoomAbove ? top - LABEL_GAP - labelHeight : bottom + LABEL_GAP
+    const labelTop = clamp(
+      idealLabelTop,
+      BOUNDING_PADDING,
+      Math.max(BOUNDING_PADDING, bounding.height - BOUNDING_PADDING - labelHeight)
+    )
+    const labelText: TextAttrs = {
+      x: labelCenterX,
+      y: labelTop,
+      width: labelWidth,
+      height: labelHeight,
+      text: label,
+      align: 'center'
+    }
 
     return [
       {
-        type: 'line',
-        attrs: lines,
+        type: 'rect',
+        ignoreEvent: true,
+        attrs: rangeRect,
         styles: {
-          color: '#d97706',
+          style: 'stroke_fill',
+          color: palette.fillColor,
+          borderColor: palette.borderColor,
+          borderSize: 1,
+          borderStyle: 'solid',
+          borderRadius: 2
+        }
+      },
+      {
+        type: 'line',
+        attrs: diagonal,
+        styles: {
+          color: palette.color,
           size: 1,
           style: 'dashed',
           dashedValue: [4, 3]
         }
       },
       {
-        type: 'rect',
-        ignoreEvent: true,
-        attrs: rect,
-        styles: {
-          style: 'stroke_fill',
-          color: 'rgba(255, 251, 235, 0.94)',
-          borderColor: 'rgba(120, 53, 15, 0.28)',
-          borderSize: 1,
-          borderRadius: 4
-        }
-      },
-      {
         type: 'text',
         ignoreEvent: true,
-        attrs: texts,
+        attrs: labelText,
         styles: {
-          color: '#5c3b09',
-          size: 12,
-          weight: 'normal',
-          backgroundColor: 'transparent',
+          style: 'fill',
+          color: '#ffffff',
+          size: LABEL_FONT_SIZE,
+          weight: LABEL_FONT_WEIGHT,
+          backgroundColor: palette.color,
           borderSize: 0,
-          paddingLeft: 0,
-          paddingTop: 0,
-          paddingRight: 0,
-          paddingBottom: 0
+          borderRadius: 4,
+          paddingLeft: LABEL_HORIZONTAL_PADDING,
+          paddingTop: LABEL_VERTICAL_PADDING,
+          paddingRight: LABEL_HORIZONTAL_PADDING,
+          paddingBottom: LABEL_VERTICAL_PADDING
         }
       }
     ]
