@@ -7,6 +7,12 @@ The debug page now includes a **Backtest** button. The report supports:
 - Entire-history, rolling 7/30/90/365-day, and custom UTC date ranges.
 - JSON/CSV import, local persistence, and runtime injection.
 
+## Built-in strategy runner
+
+The toolbar's **Strategy** menu runs the included ATR Expansion Breakout strategy and sends its trades directly into this report. Its default configuration is ATR21, stop multiplier 3, RR4, and the `30m` timeframe aggregated from cached `15m` BTCUSDT bars.
+
+See `debug/ATR_EXPANSION_STRATEGY.md` for the execution rules, parameters, Pine source location, and runtime API.
+
 ## Recommended JSON
 
 Place the generated file at `debug/data/backtest-trades.json` to load it automatically:
@@ -53,8 +59,9 @@ window.dispatchEvent(new CustomEvent('klinecharts:backtest-data', {
 }))
 ```
 
-## Core test
+## Core tests
 
 ```bash
 node debug/backtest-report-core.test.mjs
+node debug/strategies/atr-expansion-breakout.test.mjs
 ```
