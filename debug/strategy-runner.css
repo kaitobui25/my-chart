@@ -1,0 +1,186 @@
+.strategy-menu {
+  position: relative;
+  height: 30px;
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.strategy-menu > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+  cursor: pointer;
+  list-style: none;
+}
+
+.strategy-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.strategy-menu > summary:hover,
+.strategy-menu[open] > summary {
+  background: #eef2f6;
+}
+
+.strategy-menu[open] > summary {
+  border-color: #0969da;
+}
+
+.strategy-panel {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 90;
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(31, 35, 40, 0.18);
+  color: #1f2328;
+}
+
+.strategy-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.strategy-panel-heading div {
+  display: grid;
+  gap: 2px;
+}
+
+.strategy-panel-heading strong {
+  font-size: 14px;
+}
+
+.strategy-panel-heading span,
+.strategy-panel-heading a {
+  color: #57606a;
+  font-size: 12px;
+}
+
+.strategy-panel-heading a {
+  color: #0969da;
+  white-space: nowrap;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 9px;
+}
+
+.strategy-field {
+  display: grid;
+  gap: 4px;
+  color: #57606a;
+  font-size: 12px;
+}
+
+.strategy-field-wide {
+  width: 100%;
+}
+
+.strategy-field input,
+.strategy-field select {
+  width: 100%;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+  font: inherit;
+}
+
+.strategy-field input:focus,
+.strategy-field select:focus {
+  border-color: #0969da;
+  outline: 2px solid rgba(9, 105, 218, 0.16);
+}
+
+.strategy-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #57606a;
+}
+
+.strategy-checkbox input {
+  margin: 0;
+}
+
+.strategy-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.strategy-actions button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+  cursor: pointer;
+  font: inherit;
+}
+
+.strategy-actions button[type="submit"] {
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.strategy-actions button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.strategy-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.strategy-status {
+  min-height: 18px;
+  margin: 10px 0 0;
+  color: #57606a;
+  font-size: 12px;
+}
+
+.strategy-status[data-state="success"] {
+  color: #1a7f37;
+}
+
+.strategy-status[data-state="error"] {
+  color: #cf222e;
+}
+
+@media (max-width: 720px) {
+  .strategy-panel {
+    position: fixed;
+    top: 52px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .strategy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
