@@ -1,8 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000
 
 const TRADE_LIST_KEYS = ['trades', 'results', 'closedTrades', 'closed_trades', 'data']
-const INITIAL_CAPITAL_KEYS = ['initialCapital', 'initial_capital', 'startingBalance', 'starting_balance', 'startBalance', 'start_balance']
-const STRATEGY_KEYS = ['strategy', 'strategyName', 'strategy_name', 'name', 'title']
+const INITIAL_CAPITAL_KEYS = ['initialCapital', 'initial_capital', 'startingCapital', 'starting_capital', 'startingBalance', 'starting_balance', 'initialBalance', 'initial_balance', 'startBalance', 'start_balance', 'capital']
+const STRATEGY_KEYS = ['strategy', 'strategyName', 'strategy_name', 'strategyId', 'strategy_id', 'name', 'title']
 const CURRENCY_KEYS = ['currency', 'quoteCurrency', 'quote_currency']
 
 function firstDefinedEntry (record, keys) {
@@ -95,11 +95,11 @@ export function normalizeTrade (rawTrade, index = 0) {
 
   const entryTime = toTimestamp(firstDefined(rawTrade, [
     'entryTime', 'entry_time', 'openTime', 'open_time', 'entryTimestamp', 'entry_timestamp',
-    'openedAt', 'opened_at', 'startTime', 'start_time'
+    'openedAt', 'opened_at', 'startTime', 'start_time', 'entryTs', 'entry_ts', 'entryDatetime', 'entry_datetime', 'entryDate', 'entry_date'
   ]))
   const exitTime = toTimestamp(firstDefined(rawTrade, [
     'exitTime', 'exit_time', 'closeTime', 'close_time', 'exitTimestamp', 'exit_timestamp',
-    'closedAt', 'closed_at', 'endTime', 'end_time', 'timestamp', 'date', 'time'
+    'closedAt', 'closed_at', 'endTime', 'end_time', 'exitTs', 'exit_ts', 'exitDatetime', 'exit_datetime', 'exitDate', 'exit_date', 'timestamp', 'date', 'time'
   ])) ?? entryTime
 
   if (exitTime === null) {
@@ -109,12 +109,12 @@ export function normalizeTrade (rawTrade, index = 0) {
   const side = normalizeSide(firstDefined(rawTrade, ['side', 'direction', 'positionSide', 'position_side', 'type']))
   const entryPrice = toFiniteNumber(firstDefined(rawTrade, ['entryPrice', 'entry_price', 'openPrice', 'open_price', 'priceOpen', 'price_open']))
   const exitPrice = toFiniteNumber(firstDefined(rawTrade, ['exitPrice', 'exit_price', 'closePrice', 'close_price', 'priceClose', 'price_close']))
-  const quantity = toFiniteNumber(firstDefined(rawTrade, ['quantity', 'qty', 'size', 'amount', 'contracts', 'stakeAmount', 'stake_amount']))
-  const fees = toFiniteNumber(firstDefined(rawTrade, ['fees', 'fee', 'commission', 'commissions', 'costs', 'tradingCosts', 'trading_costs'])) ?? 0
+  const quantity = toFiniteNumber(firstDefined(rawTrade, ['quantity', 'qty', 'size', 'amount', 'contracts', 'positionSize', 'position_size', 'stakeAmount', 'stake_amount']))
+  const fees = toFiniteNumber(firstDefined(rawTrade, ['fees', 'fee', 'feesUsd', 'fees_usd', 'feeUsd', 'fee_usd', 'commission', 'commissionUsd', 'commission_usd', 'commissions', 'costs', 'tradingCosts', 'trading_costs'])) ?? 0
 
   let pnl = toFiniteNumber(firstDefined(rawTrade, [
     'netPnl', 'net_pnl', 'pnl', 'profit', 'profitAbs', 'profit_abs', 'realizedPnl', 'realized_pnl',
-    'netProfit', 'net_profit', 'pl'
+    'netProfit', 'net_profit', 'pnlUsd', 'pnl_usd', 'netPnlUsd', 'net_pnl_usd', 'netProfitUsd', 'net_profit_usd', 'pl', 'pnlR', 'pnl_r', 'netR', 'net_r'
   ]))
   if (pnl === null) {
     const grossPnl = toFiniteNumber(firstDefined(rawTrade, ['grossPnl', 'gross_pnl', 'grossProfit', 'gross_profit']))
