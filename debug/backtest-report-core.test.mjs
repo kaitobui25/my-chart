@@ -58,4 +58,8 @@ const derived = normalizeBacktestPayload({ trades: [{
 }] })
 assert.equal(derived.trades[0].pnl, 19)
 
+const rReport = normalizeBacktestPayload({ trades: [{ exit_ts: 1_700_000_000, pnl_r: 1.25 }] })
+assert.equal(rReport.currency, 'R')
+assert.equal(rReport.trades[0].pnl, 1.25)
+
 console.log('backtest-report-core tests passed')
