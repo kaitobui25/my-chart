@@ -112,10 +112,11 @@ export function normalizeTrade (rawTrade, index = 0) {
   const quantity = toFiniteNumber(firstDefined(rawTrade, ['quantity', 'qty', 'size', 'amount', 'contracts', 'positionSize', 'position_size', 'stakeAmount', 'stake_amount']))
   const fees = toFiniteNumber(firstDefined(rawTrade, ['fees', 'fee', 'feesUsd', 'fees_usd', 'feeUsd', 'fee_usd', 'commission', 'commissionUsd', 'commission_usd', 'commissions', 'costs', 'tradingCosts', 'trading_costs'])) ?? 0
 
-  let pnl = toFiniteNumber(firstDefined(rawTrade, [
+  const pnlEntry = firstDefinedEntry(rawTrade, [
     'netPnl', 'net_pnl', 'pnl', 'profit', 'profitAbs', 'profit_abs', 'realizedPnl', 'realized_pnl',
     'netProfit', 'net_profit', 'pnlUsd', 'pnl_usd', 'netPnlUsd', 'net_pnl_usd', 'netProfitUsd', 'net_profit_usd', 'pl', 'pnlR', 'pnl_r', 'netR', 'net_r'
-  ]))
+  ])
+  let pnl = toFiniteNumber(pnlEntry?.value)
   if (pnl === null) {
     const grossPnl = toFiniteNumber(firstDefined(rawTrade, ['grossPnl', 'gross_pnl', 'grossProfit', 'gross_profit']))
     pnl = grossPnl === null ? computePnlFromPrices({ side, entryPrice, exitPrice, quantity, fees }) : grossPnl - fees
@@ -142,6 +143,7 @@ export function normalizeTrade (rawTrade, index = 0) {
     quantity,
     fees,
     pnl,
+    pnlUnit: ['pnlR', 'pnl_r', 'netR', 'net_r'].includes(pnlEntry?.key) ? 'R' : null,
     returnPct,
     raw: rawTrade
   }
@@ -167,7 +169,9 @@ export function normalizeBacktestPayload (payload, sourceName = 'Backtest data')
 
   const initialCapital = toFiniteNumber(firstDefined(root, INITIAL_CAPITAL_KEYS)) ?? 0
   const strategy = String(firstDefined(root, STRATEGY_KEYS) ?? sourceName)
-  const currency = String(firstDefined(root, CURRENCY_KEYS) ?? 'USD').toUpperCase()
+  const explicitCurrency = firstDefined(root, CURRENCY_KEYS)
+  const usesRMultiples = trades.length > 0 && trades.every(trade => trade.pnlUnit === 'R')
+  const currency = String(explicitCurrency ?? (usesRMultiples ? 'R' : 'USD')).toUpperCase()
 
   return {
     strategy,
