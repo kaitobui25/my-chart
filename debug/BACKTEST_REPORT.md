@@ -34,7 +34,7 @@ Place the generated file at `debug/data/backtest-trades.json` to load it automat
 
 An array of trade objects is also accepted. Common snake_case fields such as `entry_time`, `exit_time`, `entry_ts`, `exit_ts`, `net_pnl`, `pnl_usd`, `profit_abs`, `return_pct`, `entry_price`, `exit_price`, and `qty` are normalized automatically. A CSV file can use the same column names.
 
-`pnl`/`net_pnl` is treated as net PnL. When PnL is omitted, the report derives it from side, entry price, exit price, quantity, and fees.
+`pnl`/`net_pnl` is treated as net PnL. When PnL is omitted, the report derives it from side, entry price, exit price, quantity, and fees. ExactBT files containing only `pnl_r`/`net_r` are displayed in R units instead of being mislabeled as USD.
 
 ## Runtime integration
 
