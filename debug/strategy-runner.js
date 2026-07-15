@@ -57,13 +57,13 @@ function createStrategyMenu () {
         ${createNumberField('atrMeanWindow', 'ATR mean', ATR_EXPANSION_BREAKOUT_DEFAULTS.atrMeanWindow)}
         ${createNumberField('atrWindow', 'Signal ATR', ATR_EXPANSION_BREAKOUT_DEFAULTS.atrWindow)}
         ${createNumberField('atrStopWindow', 'Stop ATR', ATR_EXPANSION_BREAKOUT_DEFAULTS.atrStopWindow)}
-        ${createNumberField('atrStopMultiplier', 'Stop multiplier', ATR_EXPANSION_BREAKOUT_DEFAULTS.atrStopMultiplier, '0.25', '0.1')}
+        ${createNumberField('atrStopMultiplier', 'Stop multiplier', ATR_EXPANSION_BREAKOUT_DEFAULTS.atrStopMultiplier, '0.05', '0.1')}
         ${createNumberField('expansionMultiplier', 'Expansion', ATR_EXPANSION_BREAKOUT_DEFAULTS.expansionMultiplier, '0.05', '0.1')}
         ${createNumberField('breakoutLookback', 'Breakout lookback', ATR_EXPANSION_BREAKOUT_DEFAULTS.breakoutLookback)}
         ${createNumberField('maximumHoldBars', 'Maximum hold', ATR_EXPANSION_BREAKOUT_DEFAULTS.maximumHoldBars)}
-        ${createNumberField('riskReward', 'Risk / reward', ATR_EXPANSION_BREAKOUT_DEFAULTS.riskReward, '0.25', '0.1')}
-        ${createNumberField('initialCapital', 'Initial capital', ATR_EXPANSION_BREAKOUT_DEFAULTS.initialCapital, '100', '1')}
-        ${createNumberField('positionSizePct', 'Equity per trade %', ATR_EXPANSION_BREAKOUT_DEFAULTS.positionSizePct, '1', '0.01')}
+        ${createNumberField('riskReward', 'Risk / reward', ATR_EXPANSION_BREAKOUT_DEFAULTS.riskReward, '0.05', '0.1')}
+        ${createNumberField('initialCapital', 'Initial capital', ATR_EXPANSION_BREAKOUT_DEFAULTS.initialCapital, '1', '1')}
+        ${createNumberField('positionSizePct', 'Equity per trade %', ATR_EXPANSION_BREAKOUT_DEFAULTS.positionSizePct, '0.01', '0.01')}
         ${createNumberField('commissionPct', 'Commission % / side', ATR_EXPANSION_BREAKOUT_DEFAULTS.commissionPct, '0.01', '0')}
         <label class="strategy-field">
           <span>Side</span>
