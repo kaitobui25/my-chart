@@ -6,6 +6,7 @@ import {
 } from './strategies/atr-expansion-breakout.js'
 
 const PERIOD_SOURCES = {
+  '5m': { file: 'BTCUSDT-5m.json' },
   '15m': { file: 'BTCUSDT-15m.json' },
   '30m': { file: 'BTCUSDT-15m.json', aggregateMinutes: 30 },
   '1h': { file: 'BTCUSDT-1h.json' },
@@ -45,6 +46,7 @@ function createStrategyMenu () {
         <span>Backtest timeframe</span>
         <select name="timeframe">
           <option value="30m" selected>30m — aggregate cached 15m bars</option>
+          <option value="5m">5m</option>
           <option value="15m">15m</option>
           <option value="1h">1h</option>
           <option value="1d">1d</option>
