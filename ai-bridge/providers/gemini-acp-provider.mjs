@@ -137,7 +137,7 @@ export class GeminiAcpProvider {
     }
   }
 
-  async chat ({ sessionKey, prompt, onCancel }) {
+  async chat ({ sessionKey, mode = 'chat', prompt, onCancel }) {
     if (!commandExists('gemini')) throw createProviderError('Gemini CLI was not found in PATH.', 'PROVIDER_UNAVAILABLE')
     const connection = await this.ensureConnection()
     let sessionId = this.sessions.get(sessionKey)
@@ -146,7 +146,7 @@ export class GeminiAcpProvider {
       this.sessions.set(sessionKey, sessionId)
     }
     onCancel?.(() => connection.cancel(sessionId))
-    return parseModelResponse(await connection.prompt(sessionId, prompt))
+    return parseModelResponse(await connection.prompt(sessionId, prompt), mode)
   }
 
   resetSession (sessionKey) {
