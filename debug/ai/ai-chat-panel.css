@@ -29,7 +29,7 @@
 
 .ai-panel-header,
 .ai-panel-toolbar,
-.ai-quick-actions,
+.ai-panel-actions,
 .ai-chat-form {
   display: flex;
   gap: 8px;
@@ -45,8 +45,8 @@
 
 .ai-panel-header button,
 .ai-panel-toolbar button,
-.ai-quick-actions button,
-.ai-chat-form button,
+.ai-panel-actions button,
+.ai-composer-actions button,
 .ai-panel-toggle {
   border: 1px solid #c9d0d8;
   border-radius: 5px;
@@ -93,8 +93,8 @@
 }
 
 .ai-panel-toolbar button,
-.ai-quick-actions button,
-.ai-chat-form button {
+.ai-panel-actions button,
+.ai-composer-actions button {
   min-height: 30px;
   padding: 0 10px;
 }
@@ -149,17 +149,6 @@
   background: #f6f8fa;
   font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
   white-space: pre-wrap;
-}
-
-.ai-quick-actions {
-  border-top: 1px solid #d0d7de;
-}
-
-.ai-quick-actions button:first-child {
-  flex: 1;
-  border-color: #0969da;
-  background: #0969da;
-  color: #ffffff;
 }
 
 .ai-chat-form {
@@ -271,4 +260,63 @@
     border-top: 1px solid #d0d7de;
     box-shadow: 0 -8px 24px rgba(31, 35, 40, 0.18);
   }
+}
+
+.ai-panel-toolbar-main,
+.ai-codex-settings {
+  padding-bottom: 8px;
+}
+
+.ai-codex-settings {
+  padding-top: 0;
+}
+
+.ai-codex-settings[hidden] {
+  display: none;
+}
+
+.ai-panel-actions {
+  align-items: center;
+  padding-top: 0;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.ai-panel-actions button {
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.ai-chat-form {
+  align-items: stretch;
+}
+
+.ai-composer-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-composer-actions button {
+  flex: 1;
+  min-width: 70px;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.ai-composer-actions #ai-send {
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+}
+
+.ai-trade-analysis-mode .ai-composer-actions #ai-send {
+  border-color: #cf222e;
+  background: #cf222e;
+}
+
+.ai-input-hint {
+  padding: 0 10px 5px;
+  color: #6e7781;
+  font-size: 10px;
 }
