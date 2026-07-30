@@ -5,6 +5,10 @@
   gap: 6px;
 }
 
+.replay-session-controls[hidden] {
+  display: none;
+}
+
 .replay-controls button,
 .replay-controls select {
   height: 30px;
