@@ -1,7 +1,8 @@
 import { AiApiClient } from './ai-api-client.js'
 import { createEvaluationStore } from './evaluation-store.js'
 
-const STORAGE_KEY = 'my-chart.ai.panel.v1'
+const STORAGE_KEY = 'my-chart.ai.panel.v2'
+const REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh']
 
 function readState () {
   try {
@@ -49,8 +50,61 @@ function appendMessage (messages, role, text, plan = null) {
   messages.scrollTop = messages.scrollHeight
 }
 
-function buildSessionKey (provider, context, nonce) {
-  return `${provider}:${context.symbol}:${context.timeframe}:${nonce}`
+function buildSessionKey (state, context) {
+  const model = state.provider === 'codex' ? state.model || 'default' : 'default'
+  const effort = state.provider === 'codex' ? state.reasoningEffort : 'default'
+  return `${state.provider}:${model}:${effort}:${state.mode}:${context.symbol}:${context.timeframe}:${state.nonce}`
+}
+
+function formatResetTime (timestamp) {
+  if (!Number.isFinite(timestamp)) return 'không rõ'
+  return new Date(timestamp * 1000).toLocaleString()
+}
+
+function formatWindowName (bucket) {
+  const minutes = bucket?.windowDurationMins
+  if (minutes === 300) return '5 giờ'
+  if (minutes === 10080) return 'Tuần'
+  if (Number.isFinite(minutes)) {
+    if (minutes % 1440 === 0) return `${minutes / 1440} ngày`
+    if (minutes % 60 === 0) return `${minutes / 60} giờ`
+    return `${minutes} phút`
+  }
+  return bucket?.slot === 'secondary' ? 'Giới hạn phụ' : 'Giới hạn chính'
+}
+
+function formatRateLimit (bucket) {
+  if (bucket === null || typeof bucket !== 'object') return null
+  const used = Number.isFinite(bucket.usedPercent) ? `${bucket.usedPercent}% đã dùng` : 'mức dùng không rõ'
+  const remaining = Number.isFinite(bucket.remainingPercent) ? `còn ${bucket.remainingPercent}%` : null
+  const reset = Number.isFinite(bucket.resetsAt) ? `reset ${formatResetTime(bucket.resetsAt)}` : null
+  return `${formatWindowName(bucket)}: ${[used, remaining, reset].filter(Boolean).join(' · ')}`
+}
+
+function formatCodexStatus (payload) {
+  const lines = ['Codex status']
+  const account = payload?.account
+  if (account !== null && typeof account === 'object') {
+    const identity = account.email || account.type || 'đã đăng nhập'
+    lines.push(`Tài khoản: ${identity}${account.planType ? ` · ${account.planType}` : ''}`)
+  } else {
+    lines.push('Tài khoản: không có thông tin đăng nhập')
+  }
+
+  lines.push(`Model: ${payload?.selected?.model || 'Default của Codex'}`)
+  lines.push(`Reasoning: ${payload?.selected?.reasoningEffort || 'medium'}`)
+
+  const buckets = [payload?.rateLimits?.primary, payload?.rateLimits?.secondary]
+    .map(formatRateLimit)
+    .filter(Boolean)
+  lines.push(...(buckets.length > 0 ? buckets : ['Quota: Codex không trả về cửa sổ quota nào.']))
+
+  if (payload?.rateLimits?.reachedType) lines.push(`Limit reached: ${payload.rateLimits.reachedType}`)
+  if (payload?.rateLimits?.spendControlReached === true) lines.push('Spend control: đã chạm giới hạn')
+  if (payload?.resetCredits !== null && payload?.resetCredits !== undefined) {
+    lines.push(`Reset credits: ${payload.resetCredits.availableCount ?? 0}`)
+  }
+  return lines.join('\n')
 }
 
 export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
@@ -61,9 +115,13 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
   const state = {
     open: saved.open !== false,
     provider: typeof saved.provider === 'string' ? saved.provider : 'codex',
+    mode: saved.mode === 'analyze' ? 'analyze' : 'chat',
+    model: typeof saved.model === 'string' ? saved.model : '',
+    reasoningEffort: REASONING_EFFORTS.includes(saved.reasoningEffort) ? saved.reasoningEffort : 'medium',
     nonce: Number.isInteger(saved.nonce) ? saved.nonce : 1,
     busy: false,
-    sessionKey: null
+    sessionKey: null,
+    codexOptionsLoaded: false
   }
 
   const shell = createElement('div', 'ai-app-shell')
@@ -74,12 +132,12 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
   panel.innerHTML = `
     <header class="ai-panel-header">
       <div>
-        <strong>AI Trading Assistant</strong>
+        <strong>AI Chart Assistant</strong>
         <div id="ai-connection-status" class="ai-connection-status">Checking bridge…</div>
       </div>
       <button id="ai-panel-close" type="button" aria-label="Close AI panel">×</button>
     </header>
-    <div class="ai-panel-toolbar">
+    <div class="ai-panel-toolbar ai-panel-toolbar-main">
       <label>Provider
         <select id="ai-provider-select">
           <option value="codex">Codex</option>
@@ -87,20 +145,43 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
           <option value="fake">Offline test</option>
         </select>
       </label>
+      <label>Mode
+        <select id="ai-mode-select">
+          <option value="chat">Chat bình thường</option>
+          <option value="analyze">Phân tích lệnh</option>
+        </select>
+      </label>
+    </div>
+    <div id="ai-codex-settings" class="ai-panel-toolbar ai-codex-settings">
+      <label>Codex model
+        <select id="ai-model-select">
+          <option value="">Default</option>
+        </select>
+      </label>
+      <label>Reasoning
+        <select id="ai-reasoning-select">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="xhigh">Extra high</option>
+        </select>
+      </label>
+    </div>
+    <div class="ai-panel-actions">
       <button id="ai-new-session" type="button">New</button>
       <button id="ai-clear-plan" type="button">Clear plan</button>
       <button id="ai-export-eval" type="button">Export eval</button>
     </div>
     <div id="ai-context-badge" class="ai-context-badge">No context</div>
     <div id="ai-messages" class="ai-messages" aria-live="polite"></div>
-    <div class="ai-quick-actions">
-      <button id="ai-analyze" type="button">Analyze current chart</button>
-      <button id="ai-cancel" type="button" disabled>Cancel</button>
-    </div>
     <form id="ai-chat-form" class="ai-chat-form">
-      <textarea id="ai-chat-input" rows="3" placeholder="Ask about the chart…"></textarea>
-      <button id="ai-send" type="submit">Send</button>
+      <textarea id="ai-chat-input" rows="3" placeholder="Hỏi về chart…"></textarea>
+      <div class="ai-composer-actions">
+        <button id="ai-cancel" type="button" disabled>Cancel</button>
+        <button id="ai-send" type="submit">Send</button>
+      </div>
     </form>
+    <div class="ai-input-hint">Enter để gửi · Shift+Enter để xuống hàng · /status để xem quota Codex</div>
     <div class="ai-disclaimer">Analysis only. No exchange order is sent.</div>
   `
   shell.appendChild(panel)
@@ -110,20 +191,33 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
   document.getElementById('toolbar')?.appendChild(toggleButton)
 
   const providerSelect = panel.querySelector('#ai-provider-select')
+  const modeSelect = panel.querySelector('#ai-mode-select')
+  const modelSelect = panel.querySelector('#ai-model-select')
+  const reasoningSelect = panel.querySelector('#ai-reasoning-select')
+  const codexSettings = panel.querySelector('#ai-codex-settings')
   const status = panel.querySelector('#ai-connection-status')
   const badge = panel.querySelector('#ai-context-badge')
   const messages = panel.querySelector('#ai-messages')
   const input = panel.querySelector('#ai-chat-input')
   const sendButton = panel.querySelector('#ai-send')
-  const analyzeButton = panel.querySelector('#ai-analyze')
   const cancelButton = panel.querySelector('#ai-cancel')
+  const form = panel.querySelector('#ai-chat-form')
   const client = new AiApiClient()
   const evaluationStore = createEvaluationStore()
 
   providerSelect.value = state.provider
+  modeSelect.value = state.mode
+  reasoningSelect.value = state.reasoningEffort
 
   function persist () {
-    writeState({ open: state.open, provider: state.provider, nonce: state.nonce })
+    writeState({
+      open: state.open,
+      provider: state.provider,
+      mode: state.mode,
+      model: state.model,
+      reasoningEffort: state.reasoningEffort,
+      nonce: state.nonce
+    })
   }
 
   function setOpen (open) {
@@ -137,9 +231,27 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
     state.busy = busy
     input.disabled = busy
     sendButton.disabled = busy
-    analyzeButton.disabled = busy
     providerSelect.disabled = busy
+    modeSelect.disabled = busy
+    modelSelect.disabled = busy
+    reasoningSelect.disabled = busy
     cancelButton.disabled = !busy
+  }
+
+  function syncModeUi () {
+    const analyze = state.mode === 'analyze'
+    sendButton.textContent = analyze ? 'Analyze' : 'Send'
+    input.placeholder = analyze
+      ? 'Mô tả yêu cầu phân tích lệnh…'
+      : 'Hỏi tự nhiên về chart…'
+    panel.classList.toggle('ai-trade-analysis-mode', analyze)
+    if (!analyze) tradePlanOverlay.clear()
+  }
+
+  function syncProviderUi () {
+    const codex = state.provider === 'codex'
+    codexSettings.hidden = !codex
+    if (codex) loadCodexOptions()
   }
 
   function refreshBadge () {
@@ -149,12 +261,33 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
     return context
   }
 
+  async function loadCodexOptions () {
+    if (state.codexOptionsLoaded) return
+    try {
+      const options = await client.codexOptions()
+      const models = Array.isArray(options.models) ? options.models : []
+      modelSelect.replaceChildren(new Option('Default', ''))
+      models.forEach(model => modelSelect.add(new Option(model.label || model.id, model.id)))
+      if (state.model && !models.some(model => model.id === state.model)) {
+        modelSelect.add(new Option(`${state.model} (saved)`, state.model))
+      }
+      modelSelect.value = state.model
+      state.codexOptionsLoaded = true
+    } catch (error) {
+      status.textContent = `Codex options: ${error.message}`
+      status.classList.add('error')
+    }
+  }
+
   async function refreshHealth () {
     try {
       const [health, providers] = await Promise.all([client.health(), client.providers()])
       const selected = providers.providers?.find(item => item.id === state.provider)
+      const codexSuffix = state.provider === 'codex'
+        ? ` · ${state.model || 'default'} · ${state.reasoningEffort}`
+        : ''
       status.textContent = selected?.available
-        ? `Connected · ${selected.label}`
+        ? `Connected · ${selected.label}${codexSuffix}`
         : `Bridge online · ${selected?.reason ?? 'provider unavailable'}`
       status.classList.toggle('error', !health.ok || selected?.available === false)
     } catch (error) {
@@ -163,12 +296,34 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
     }
   }
 
-  async function submitMessage (message, mode = 'chat') {
+  async function showCodexStatus (message) {
+    appendMessage(messages, 'user', message)
+    input.value = ''
+    setBusy(true)
+    try {
+      const result = await client.codexStatus({
+        model: state.model || null,
+        reasoningEffort: state.reasoningEffort
+      })
+      appendMessage(messages, 'assistant', formatCodexStatus(result))
+    } catch (error) {
+      appendMessage(messages, 'assistant', `Error: ${error.message}`)
+    } finally {
+      setBusy(false)
+      refreshHealth()
+    }
+  }
+
+  async function submitMessage (message) {
     const trimmed = message.trim()
     if (!trimmed || state.busy) return
 
+    if (state.provider === 'codex' && trimmed.toLowerCase() === '/status') {
+      return await showCodexStatus(trimmed)
+    }
+
     const context = refreshBadge()
-    state.sessionKey = buildSessionKey(state.provider, context, state.nonce)
+    state.sessionKey = buildSessionKey(state, context)
     appendMessage(messages, 'user', trimmed)
     input.value = ''
     setBusy(true)
@@ -177,20 +332,24 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
       const response = await client.chat({
         provider: state.provider,
         sessionKey: state.sessionKey,
-        mode,
+        mode: state.mode,
+        model: state.provider === 'codex' ? state.model || null : null,
+        reasoningEffort: state.provider === 'codex' ? state.reasoningEffort : null,
         message: trimmed,
         context,
         screenshotDataUrl: contextApi.captureScreenshot()
       })
-      appendMessage(messages, 'assistant', response.message ?? 'No response text.', response.tradePlan)
-      if (mode === 'analyze' && response.tradePlan !== null) {
-        evaluationStore.record({ provider: response.provider, mode, context, tradePlan: response.tradePlan })
+      const tradePlan = state.mode === 'analyze' ? response.tradePlan : null
+      appendMessage(messages, 'assistant', response.message ?? 'No response text.', tradePlan)
+
+      if (state.mode === 'analyze' && tradePlan !== null) {
+        evaluationStore.record({ provider: response.provider, mode: state.mode, context, tradePlan })
         refreshBadge()
-      }
-      if (response.tradePlan?.decision === 'LONG' || response.tradePlan?.decision === 'SHORT') {
-        tradePlanOverlay.render({ ...response.tradePlan, provider: response.provider })
-      } else {
-        tradePlanOverlay.clear()
+        if (tradePlan.decision === 'LONG' || tradePlan.decision === 'SHORT') {
+          tradePlanOverlay.render({ ...tradePlan, provider: response.provider })
+        } else {
+          tradePlanOverlay.clear()
+        }
       }
     } catch (error) {
       appendMessage(messages, 'assistant', `Error: ${error.message}`)
@@ -200,30 +359,55 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
     }
   }
 
+  function resetSessionForSettingsChange () {
+    state.nonce += 1
+    state.sessionKey = null
+    persist()
+  }
+
   toggleButton.addEventListener('click', () => setOpen(!state.open))
   panel.querySelector('#ai-panel-close').addEventListener('click', () => setOpen(false))
   panel.querySelector('#ai-clear-plan').addEventListener('click', () => tradePlanOverlay.clear())
   panel.querySelector('#ai-export-eval').addEventListener('click', () => evaluationStore.exportJson())
   panel.querySelector('#ai-new-session').addEventListener('click', async () => {
     const previousKey = state.sessionKey
-    state.nonce += 1
-    state.sessionKey = null
-    persist()
+    resetSessionForSettingsChange()
     if (previousKey) await client.resetSession(previousKey).catch(() => {})
     appendMessage(messages, 'assistant', 'Started a new AI session for this chart.')
   })
+
   providerSelect.addEventListener('change', () => {
     state.provider = providerSelect.value
-    state.nonce += 1
-    state.sessionKey = null
-    persist()
+    resetSessionForSettingsChange()
+    syncProviderUi()
     refreshHealth()
   })
-  panel.querySelector('#ai-chat-form').addEventListener('submit', event => {
-    event.preventDefault()
-    submitMessage(input.value, 'chat')
+  modeSelect.addEventListener('change', () => {
+    state.mode = modeSelect.value === 'analyze' ? 'analyze' : 'chat'
+    resetSessionForSettingsChange()
+    syncModeUi()
   })
-  analyzeButton.addEventListener('click', () => submitMessage('Analyze the current chart and return a trade plan only when the setup is clear.', 'analyze'))
+  modelSelect.addEventListener('change', () => {
+    state.model = modelSelect.value
+    resetSessionForSettingsChange()
+    refreshHealth()
+  })
+  reasoningSelect.addEventListener('change', () => {
+    state.reasoningEffort = REASONING_EFFORTS.includes(reasoningSelect.value) ? reasoningSelect.value : 'medium'
+    resetSessionForSettingsChange()
+    refreshHealth()
+  })
+
+  form.addEventListener('submit', event => {
+    event.preventDefault()
+    submitMessage(input.value)
+  })
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault()
+      form.requestSubmit()
+    }
+  })
   cancelButton.addEventListener('click', async () => {
     if (!state.sessionKey) return
     await client.cancel(state.sessionKey).catch(() => {})
@@ -233,7 +417,9 @@ export function mountAiChatPanel ({ contextApi, tradePlanOverlay }) {
   observer.observe(document.getElementById('toolbar') ?? root, { subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] })
 
   setOpen(state.open)
+  syncProviderUi()
+  syncModeUi()
   refreshBadge()
   refreshHealth()
-  appendMessage(messages, 'assistant', 'Ready. I will use exact chart data first and the screenshot as visual context.')
+  appendMessage(messages, 'assistant', 'Sẵn sàng. Chat bình thường sẽ trả lời tự nhiên dựa trên chart; chỉ chế độ Phân tích lệnh mới tạo WAIT/LONG/SHORT và entry/SL/TP.')
 }
