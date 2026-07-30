@@ -1,9 +1,12 @@
 .rsi-indicator-settings .rsi-settings-panel {
+  position: fixed;
+  top: 52px;
+  right: 12px;
   left: auto;
-  right: 0;
+  z-index: 1000;
   display: block;
-  width: 360px;
-  max-height: min(560px, calc(100vh - 72px));
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100vh - 64px);
   overflow-y: auto;
 }
 
@@ -54,7 +57,13 @@
 
 @media (max-width: 640px) {
   .rsi-indicator-settings .rsi-settings-panel {
-    right: -36px;
-    width: min(340px, calc(100vw - 20px));
+    top: 44px;
+    right: 10px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 54px);
+  }
+
+  .rsi-settings-grid {
+    grid-template-columns: 1fr;
   }
 }
