@@ -80,6 +80,57 @@ node scripts/cache-btcusdt-data.js --refresh
 
 The generated JSON cache is ignored by git.
 
+## AI Chart Chat
+
+The debug chart can open a local AI chat panel beside the chart. The browser sends exact visible candle data, indicator results, replay state, and a chart screenshot to a bridge bound only to `127.0.0.1`.
+
+### Start on Windows
+
+```bat
+open-btcusdt-ai-chart.bat
+```
+
+This starts both:
+
+- Vite chart: `http://127.0.0.1:5173/`
+- AI bridge: `http://127.0.0.1:8788/`
+
+The original `open-btcusdt-chart.bat` remains available and does not require the AI bridge.
+
+### Providers
+
+**Codex**
+
+Install Codex CLI, run it once, and select `Sign in with ChatGPT`. The bridge invokes `codex exec` in an empty read-only runtime directory, attaches the chart PNG, and requires structured JSON output.
+
+**Gemini**
+
+Install a Gemini CLI version that supports ACP, authenticate using the account flow supported by that CLI, and confirm that `gemini --acp` starts successfully. Gemini receives exact chart JSON through ACP. Image input is intentionally disabled in the first adapter version. Availability depends on the installed Gemini CLI release and account entitlement; the panel shows the provider as unavailable when ACP cannot start.
+
+**Offline test**
+
+The built-in fake provider validates the UI, bridge, context, and response pipeline without any AI login. It always returns `WAIT`.
+
+Every **Analyze current chart** result is stored locally for replay evaluation. The panel can export JSON containing the decision plus MFE/MAE and target/stop outcomes after 4, 8, 16, and 32 future candles. The full candle context is not stored.
+
+### Commands
+
+```bash
+pnpm ai:bridge
+pnpm ai:smoke
+pnpm test:ai
+```
+
+### Safety boundaries
+
+- No exchange API is connected.
+- No live or demo order is sent.
+- The bridge listens on `127.0.0.1`, not `0.0.0.0`.
+- Cross-origin browser requests are rejected except for the local Vite chart.
+- Codex runs in a separate empty directory with read-only sandbox mode.
+- A `LONG` or `SHORT` response missing entry, stop loss, or targets is downgraded to `WAIT`.
+- Replay analysis uses only candles already present in `chart.getDataList()`, preventing access to unrevealed future candles.
+
 ## Build
 
 ```bash
