@@ -6,6 +6,7 @@
 /docs/.vitepress/cache
 /docs/node_modules
 /debug/data/*.json
+/.ai-runtime
 
 .npmrc
 
