@@ -1,0 +1,73 @@
+.replay-controls,
+.replay-session-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.replay-controls button,
+.replay-controls select {
+  height: 30px;
+  border: 1px solid #c9d0d8;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2328;
+  font: inherit;
+}
+
+.replay-controls button {
+  padding: 0 9px;
+  cursor: pointer;
+}
+
+.replay-controls button:hover:not(:disabled),
+.replay-controls select:hover:not(:disabled) {
+  background: #eef2f6;
+}
+
+.replay-controls button.active,
+.replay-controls button.active:hover {
+  border-color: #cf222e;
+  background: #cf222e;
+  color: #ffffff;
+}
+
+.replay-controls button:disabled,
+.replay-controls select:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.replay-controls select {
+  min-width: 62px;
+  padding: 0 5px;
+}
+
+#replay-position {
+  max-width: 290px;
+  overflow: hidden;
+  color: #57606a;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#chart.replay-selecting {
+  cursor: col-resize;
+}
+
+#chart.replay-selecting::after {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  border: 2px solid rgba(207, 34, 46, 0.72);
+  background: rgba(207, 34, 46, 0.025);
+  content: "";
+  pointer-events: none;
+}
+
+@media (max-width: 920px) {
+  #replay-position {
+    max-width: 170px;
+  }
+}
