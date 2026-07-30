@@ -7,12 +7,15 @@ export class FakeProvider {
     return { available: true, reason: 'Always available for UI and bridge tests.' }
   }
 
-  async chat ({ context }) {
+  async chat ({ mode = 'chat', context }) {
     const last = context?.candles?.at?.(-1)
+    const message = last?.close == null
+      ? 'Offline test provider received no candle data.'
+      : `Offline test provider received ${context.candleCount ?? context.candles?.length ?? 0} candles. Last close: ${last.close}.`
+
+    if (mode !== 'analyze') return { message, tradePlan: null }
     return {
-      message: last?.close == null
-        ? 'Offline test provider received no candle data.'
-        : `Offline test provider received ${context.candleCount ?? context.candles?.length ?? 0} candles. Last close: ${last.close}.`,
+      message,
       tradePlan: {
         decision: 'WAIT',
         confidence: 0,
