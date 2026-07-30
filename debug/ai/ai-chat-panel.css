@@ -1,0 +1,274 @@
+.ai-app-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.ai-app-shell > #root {
+  min-width: 0;
+  flex: 1;
+}
+
+.ai-chat-panel {
+  display: flex;
+  flex: 0 0 390px;
+  width: 390px;
+  min-width: 320px;
+  height: 100%;
+  flex-direction: column;
+  border-left: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #1f2328;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.ai-panel-closed .ai-chat-panel {
+  display: none;
+}
+
+.ai-panel-header,
+.ai-panel-toolbar,
+.ai-quick-actions,
+.ai-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+}
+
+.ai-panel-header {
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #d0d7de;
+  background: #ffffff;
+}
+
+.ai-panel-header button,
+.ai-panel-toolbar button,
+.ai-quick-actions button,
+.ai-chat-form button,
+.ai-panel-toggle {
+  border: 1px solid #c9d0d8;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #1f2328;
+  cursor: pointer;
+  font: inherit;
+}
+
+.ai-panel-header button {
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+}
+
+.ai-connection-status {
+  margin-top: 2px;
+  color: #57606a;
+  font-size: 12px;
+}
+
+.ai-connection-status.error {
+  color: #cf222e;
+}
+
+.ai-panel-toolbar {
+  align-items: end;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.ai-panel-toolbar label {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  color: #57606a;
+  font-size: 11px;
+}
+
+.ai-panel-toolbar select {
+  height: 30px;
+  border: 1px solid #c9d0d8;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.ai-panel-toolbar button,
+.ai-quick-actions button,
+.ai-chat-form button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.ai-context-badge {
+  margin: 8px 10px 0;
+  padding: 6px 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #57606a;
+  font-size: 11px;
+}
+
+.ai-messages {
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+}
+
+.ai-message {
+  margin-bottom: 10px;
+  padding: 9px;
+  border: 1px solid #d0d7de;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.ai-message-user {
+  margin-left: 28px;
+  background: #ddf4ff;
+}
+
+.ai-message-role {
+  margin-bottom: 4px;
+  color: #57606a;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ai-message-body {
+  white-space: pre-wrap;
+}
+
+.ai-plan-summary {
+  margin: 8px 0 0;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 5px;
+  background: #f6f8fa;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.ai-quick-actions {
+  border-top: 1px solid #d0d7de;
+}
+
+.ai-quick-actions button:first-child {
+  flex: 1;
+  border-color: #0969da;
+  background: #0969da;
+  color: #ffffff;
+}
+
+.ai-chat-form {
+  padding-top: 0;
+}
+
+.ai-chat-form textarea {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: 1px solid #c9d0d8;
+  border-radius: 6px;
+  padding: 7px;
+  font: inherit;
+}
+
+.ai-chat-form button {
+  align-self: stretch;
+}
+
+.ai-disclaimer {
+  padding: 0 10px 10px;
+  color: #6e7781;
+  font-size: 10px;
+}
+
+.ai-panel-toggle {
+  height: 30px;
+  padding: 0 12px;
+}
+
+.ai-panel-toggle.active {
+  border-color: #8250df;
+  background: #8250df;
+  color: #ffffff;
+}
+
+.ai-trade-plan-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ai-plan-entry-zone,
+.ai-plan-line {
+  position: absolute;
+  right: 72px;
+  left: 0;
+}
+
+.ai-plan-entry-zone {
+  min-height: 2px;
+  border-top: 1px solid rgba(9, 105, 218, 0.8);
+  border-bottom: 1px solid rgba(9, 105, 218, 0.8);
+  background: rgba(9, 105, 218, 0.11);
+}
+
+.ai-plan-line {
+  height: 1px;
+  border-top: 1px dashed;
+}
+
+.ai-plan-line-stop {
+  border-color: #cf222e;
+}
+
+.ai-plan-line-target {
+  border-color: #1a7f37;
+}
+
+.ai-plan-line-label {
+  position: absolute;
+  top: -10px;
+  right: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2328;
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.ai-plan-badge {
+  position: absolute;
+  top: 8px;
+  right: 78px;
+  padding: 4px 7px;
+  border: 1px solid rgba(130, 80, 223, 0.45);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #6639ba;
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+@media (max-width: 900px) {
+  .ai-app-shell {
+    position: relative;
+  }
+
+  .ai-chat-panel {
+    position: absolute;
+    z-index: 100;
+    right: 0;
+    bottom: 0;
+    width: min(100%, 460px);
+    height: 65%;
+    border-top: 1px solid #d0d7de;
+    box-shadow: 0 -8px 24px rgba(31, 35, 40, 0.18);
+  }
+}
