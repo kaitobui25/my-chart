@@ -1,3 +1,29 @@
+#toolbar {
+  position: relative;
+  z-index: 100;
+  overflow: visible;
+}
+
+#indicator-controls {
+  order: 10;
+  flex: 0 0 auto;
+}
+
+.replay-controls {
+  order: 20;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+#load-status {
+  order: 30;
+  flex: 1 1 220px;
+  min-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .replay-controls,
 .replay-session-controls {
   display: flex;
@@ -48,9 +74,10 @@
 }
 
 #replay-position {
-  max-width: 290px;
+  max-width: 200px;
   overflow: hidden;
   color: #57606a;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -71,7 +98,15 @@
 }
 
 @media (max-width: 920px) {
+  .replay-controls {
+    flex-basis: 100%;
+  }
+
   #replay-position {
-    max-width: 170px;
+    max-width: 160px;
+  }
+
+  #load-status {
+    flex-basis: 100%;
   }
 }
