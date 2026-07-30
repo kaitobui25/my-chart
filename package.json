@@ -64,9 +64,12 @@
     "build": "pnpm clean && pnpm build-core && pnpm build-dts",
     "docs:dev": "pnpm -F=docs dev",
     "docs:build": "pnpm build-umd:prod && pnpm -F=docs build",
-    "docs:preview": "pnpm -F=docs preview",
+    "docs:preview": "pnpm build-umd:prod && pnpm -F=docs preview",
     "docs:deploy": "pnpm docs:build && gh-pages -d website",
-    "debug": "vite --host 0.0.0.0 debug"
+    "debug": "vite --host 0.0.0.0 debug",
+    "ai:bridge": "node ai-bridge/server.mjs",
+    "ai:smoke": "node scripts/ai-provider-smoke.mjs",
+    "test:ai": "node --test ai-bridge/tests/*.test.mjs"
   },
   "packageManager": "pnpm@10.4.1",
   "devDependencies": {
@@ -80,7 +83,7 @@
     "@eslint/eslintrc": "^3.3.0",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-eslint": "^9.2.0",
-    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-node-resolve": "^16.3.0",
     "@rollup/plugin-replace": "^6.0.3",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
