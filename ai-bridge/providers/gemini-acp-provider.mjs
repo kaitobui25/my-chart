@@ -1,8 +1,7 @@
-import { spawn } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { parseModelResponse } from '../response-schema.mjs'
-import { commandExists, createProviderError } from './provider-utils.mjs'
+import { commandExists, createProviderError, spawnCommand } from './provider-utils.mjs'
 
 class AcpConnection {
   constructor ({ cwd }) {
@@ -16,7 +15,7 @@ class AcpConnection {
   }
 
   async start () {
-    this.child = spawn('gemini', ['--acp'], {
+    this.child = spawnCommand('gemini', ['--acp'], {
       cwd: this.cwd,
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe']
