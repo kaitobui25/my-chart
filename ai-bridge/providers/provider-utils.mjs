@@ -47,7 +47,13 @@ export function spawnCommand (command, args, options = {}) {
       '/s',
       '/c',
       buildWindowsCommand(executable, args)
-    ], options)
+    ], {
+      ...options,
+      // The command string already contains cmd.exe quoting. Without this,
+      // Node escapes the quotes again and cmd treats the whole line as a
+      // literal command name (for example: \"\"C:\\...\\codex.cmd\" ...\"\").
+      windowsVerbatimArguments: true
+    })
   }
 
   return spawn(executable, args, options)
