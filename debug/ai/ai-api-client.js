@@ -43,6 +43,14 @@ export class AiApiClient {
     return this.request('/providers')
   }
 
+  codexOptions () {
+    return this.request('/providers/codex/options')
+  }
+
+  codexStatus (payload = {}) {
+    return this.request('/providers/codex/status', { method: 'POST', body: JSON.stringify(payload) })
+  }
+
   chat (payload) {
     return this.request('/chat', { method: 'POST', body: JSON.stringify(payload) })
   }
