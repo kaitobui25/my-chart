@@ -1,4 +1,13 @@
-export const MODEL_RESPONSE_SCHEMA = {
+export const CHAT_RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    message: { type: 'string' }
+  },
+  required: ['message'],
+  additionalProperties: false
+}
+
+export const TRADE_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
     message: { type: 'string' },
@@ -39,6 +48,12 @@ export const MODEL_RESPONSE_SCHEMA = {
   },
   required: ['message', 'tradePlan'],
   additionalProperties: false
+}
+
+export const MODEL_RESPONSE_SCHEMA = TRADE_RESPONSE_SCHEMA
+
+export function getModelResponseSchema (mode = 'chat') {
+  return mode === 'analyze' ? TRADE_RESPONSE_SCHEMA : CHAT_RESPONSE_SCHEMA
 }
 
 function finiteOrNull (value) {
@@ -90,17 +105,17 @@ export function normalizeTradePlan (value = {}) {
   }
 }
 
-export function normalizeModelResponse (value) {
+export function normalizeModelResponse (value, mode = 'chat') {
   const source = value && typeof value === 'object' ? value : {}
   return {
     message: typeof source.message === 'string' && source.message.trim()
       ? source.message.trim()
       : 'The provider returned no explanatory message.',
-    tradePlan: normalizeTradePlan(source.tradePlan)
+    tradePlan: mode === 'analyze' ? normalizeTradePlan(source.tradePlan) : null
   }
 }
 
-export function parseModelResponse (text) {
+export function parseModelResponse (text, mode = 'chat') {
   if (typeof text !== 'string' || !text.trim()) {
     throw new Error('Provider returned an empty response.')
   }
@@ -113,7 +128,7 @@ export function parseModelResponse (text) {
 
   for (const candidate of candidates) {
     try {
-      return normalizeModelResponse(JSON.parse(candidate))
+      return normalizeModelResponse(JSON.parse(candidate), mode)
     } catch {}
   }
   throw new Error('Provider response was not valid JSON.')
