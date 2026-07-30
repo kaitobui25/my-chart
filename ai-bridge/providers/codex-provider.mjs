@@ -1,9 +1,8 @@
-import { spawn } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { MODEL_RESPONSE_SCHEMA, parseModelResponse } from '../response-schema.mjs'
-import { commandExists, createProviderError } from './provider-utils.mjs'
+import { commandExists, createProviderError, spawnCommand } from './provider-utils.mjs'
 
 export class CodexProvider {
   id = 'codex'
@@ -50,7 +49,7 @@ export class CodexProvider {
     let child
     try {
       const result = await new Promise((resolve, reject) => {
-        child = spawn('codex', args, {
+        child = spawnCommand('codex', args, {
           cwd: this.runtimeRoot,
           windowsHide: true,
           stdio: ['pipe', 'pipe', 'pipe']
