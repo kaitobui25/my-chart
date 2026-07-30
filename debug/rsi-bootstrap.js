@@ -1,12 +1,12 @@
 import ChartImp from '../src/Chart.ts'
 import { registerIndicator } from '../src/index.ts'
 
-const RSI_INDICATOR_NAME = 'DEBUG_RSI'
-const RSI_PANE_ID = 'debug_rsi_pane'
-const RSI_STORAGE_KEY = 'klinecharts.debug.rsi.v2'
-const LEGACY_RSI_STORAGE_KEY = 'klinecharts.debug.rsi.v1'
+const INDICATOR_NAME = 'DEBUG_RSI'
+const PANE_ID = 'debug_rsi_pane'
+const STORAGE_KEY = 'klinecharts.debug.rsi.v2'
+const LEGACY_STORAGE_KEY = 'klinecharts.debug.rsi.v1'
 
-const DEFAULT_RSI_STATE = {
+const DEFAULTS = {
   visible: true,
   period: 14,
   overbought: 70,
@@ -25,73 +25,71 @@ const DEFAULT_RSI_STATE = {
   showSupport: true
 }
 
-const ICONS = {
-  settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.97 2.97l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.08 1.65V21.3a2.1 2.1 0 0 1-4.2 0v-.06a1.8 1.8 0 0 0-1.08-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.1 2.1 0 0 1-2.97-2.97l.04-.04A1.8 1.8 0 0 0 3.86 15a1.8 1.8 0 0 0-1.65-1.08h-.06a2.1 2.1 0 0 1 0-4.2h.06a1.8 1.8 0 0 0 1.65-1.08 1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.1 2.1 0 0 1 2.97-2.97l.04.04a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.08-1.65v-.06a2.1 2.1 0 0 1 4.2 0v.06a1.8 1.8 0 0 0 1.08 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 0 1 2.97 2.97l-.04-.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.08h.06a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>',
-  eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"/><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/></svg>',
-  eyeOff: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 10.6a2.1 2.1 0 0 0 2.8 2.8"/><path d="M9.9 5.8A9.3 9.3 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16.1 16.1 0 0 1-2.7 3.4"/><path d="M6.2 7.6A16 16 0 0 0 2.5 12s3.5 6.5 9.5 6.5a9.2 9.2 0 0 0 4.3-1.1"/></svg>',
-  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 6-11 11-5-5"/></svg>'
+const NUMBER_RULES = {
+  period: [2, 500, true],
+  overbought: [0, 100, false],
+  oversold: [0, 100, false],
+  pivotLeft: [1, 20, true],
+  pivotRight: [1, 20, true],
+  minBarsBetweenPivots: [2, 200, true],
+  minRsiDifference: [0, 50, false],
+  lineTolerance: [0, 20, false],
+  minTouches: [2, 10, true],
+  lookbackBars: [30, 5000, true],
+  breakoutConfirmationBars: [1, 20, true]
 }
 
-function finiteNumber (value, fallback, min, max, integer = false) {
-  const number = Number(value)
-  if (!Number.isFinite(number) || number < min || number > max) {
-    return fallback
+const BOOLEAN_KEYS = [
+  'visible',
+  'trendEnabled',
+  'extendRight',
+  'showResistance',
+  'showSupport'
+]
+
+function normalizeState (value = {}) {
+  const state = { ...DEFAULTS }
+  for (const [key, [min, max, integer]] of Object.entries(NUMBER_RULES)) {
+    const number = Number(value[key])
+    if (Number.isFinite(number) && number >= min && number <= max) {
+      state[key] = integer ? Math.round(number) : number
+    }
   }
-  return integer ? Math.round(number) : number
-}
-
-function booleanValue (value, fallback) {
-  return typeof value === 'boolean' ? value : fallback
+  for (const key of BOOLEAN_KEYS) {
+    if (typeof value[key] === 'boolean') {
+      state[key] = value[key]
+    }
+  }
+  if (state.oversold >= state.overbought) {
+    state.overbought = DEFAULTS.overbought
+    state.oversold = DEFAULTS.oversold
+  }
+  return state
 }
 
 function readState () {
   try {
-    const stored = window.localStorage.getItem(RSI_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_RSI_STORAGE_KEY) ?? '{}'
-    const value = JSON.parse(stored)
-    return {
-      visible: booleanValue(value.visible, DEFAULT_RSI_STATE.visible),
-      period: finiteNumber(value.period, DEFAULT_RSI_STATE.period, 2, 500, true),
-      overbought: finiteNumber(value.overbought, DEFAULT_RSI_STATE.overbought, 0, 100),
-      oversold: finiteNumber(value.oversold, DEFAULT_RSI_STATE.oversold, 0, 100),
-      trendEnabled: booleanValue(value.trendEnabled, DEFAULT_RSI_STATE.trendEnabled),
-      pivotLeft: finiteNumber(value.pivotLeft, DEFAULT_RSI_STATE.pivotLeft, 1, 20, true),
-      pivotRight: finiteNumber(value.pivotRight, DEFAULT_RSI_STATE.pivotRight, 1, 20, true),
-      minBarsBetweenPivots: finiteNumber(value.minBarsBetweenPivots, DEFAULT_RSI_STATE.minBarsBetweenPivots, 2, 200, true),
-      minRsiDifference: finiteNumber(value.minRsiDifference, DEFAULT_RSI_STATE.minRsiDifference, 0, 50),
-      lineTolerance: finiteNumber(value.lineTolerance, DEFAULT_RSI_STATE.lineTolerance, 0, 20),
-      minTouches: finiteNumber(value.minTouches, DEFAULT_RSI_STATE.minTouches, 2, 10, true),
-      lookbackBars: finiteNumber(value.lookbackBars, DEFAULT_RSI_STATE.lookbackBars, 30, 5000, true),
-      breakoutConfirmationBars: finiteNumber(value.breakoutConfirmationBars, DEFAULT_RSI_STATE.breakoutConfirmationBars, 1, 20, true),
-      extendRight: booleanValue(value.extendRight, DEFAULT_RSI_STATE.extendRight),
-      showResistance: booleanValue(value.showResistance, DEFAULT_RSI_STATE.showResistance),
-      showSupport: booleanValue(value.showSupport, DEFAULT_RSI_STATE.showSupport)
-    }
+    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY) ?? '{}'
+    return normalizeState(JSON.parse(stored))
   } catch {
-    return { ...DEFAULT_RSI_STATE }
+    return { ...DEFAULTS }
   }
 }
 
-function saveState (state) {
+function saveState () {
   try {
-    window.localStorage.setItem(RSI_STORAGE_KEY, JSON.stringify(state))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {}
 }
 
 function setStatus (text) {
-  let statusElement = document.getElementById('load-status')
-  if (statusElement === null) {
-    statusElement = document.createElement('span')
-    statusElement.id = 'load-status'
-    document.getElementById('toolbar')?.appendChild(statusElement)
+  let element = document.getElementById('load-status')
+  if (element === null) {
+    element = document.createElement('span')
+    element.id = 'load-status'
+    document.getElementById('toolbar')?.appendChild(element)
   }
-  statusElement.textContent = text
-}
-
-function createIcon (name) {
-  const iconElement = document.createElement('span')
-  iconElement.className = 'control-icon'
-  iconElement.innerHTML = ICONS[name] ?? ''
-  return iconElement
+  element.textContent = text
 }
 
 function calculateRsiValues (dataList, period) {
@@ -110,7 +108,6 @@ function calculateRsiValues (dataList, period) {
       gainSum += gain
       lossSum += loss
     }
-
     if (index < period) {
       continue
     }
@@ -123,23 +120,20 @@ function calculateRsiValues (dataList, period) {
       averageLoss = (averageLoss * (period - 1) + loss) / period
     }
 
-    if (averageLoss === 0) {
-      values[index] = 100
-    } else if (averageGain === 0) {
-      values[index] = 0
-    } else {
-      values[index] = 100 - 100 / (1 + averageGain / averageLoss)
-    }
+    values[index] = averageLoss === 0
+      ? 100
+      : averageGain === 0
+        ? 0
+        : 100 - 100 / (1 + averageGain / averageLoss)
   }
-
   return values
 }
 
-function findPivots (values, startIndex, pivotLeft, pivotRight) {
+function findPivots (values, startIndex, left, right) {
   const highs = []
   const lows = []
-  const firstIndex = Math.max(startIndex, pivotLeft)
-  const lastIndex = values.length - pivotRight - 1
+  const firstIndex = Math.max(startIndex, left)
+  const lastIndex = values.length - right - 1
 
   for (let index = firstIndex; index <= lastIndex; index++) {
     const value = values[index]
@@ -147,37 +141,22 @@ function findPivots (values, startIndex, pivotLeft, pivotRight) {
       continue
     }
 
-    let isHigh = true
-    let isLow = true
-    for (let offset = 1; offset <= pivotLeft && (isHigh || isLow); offset++) {
+    let high = true
+    let low = true
+    for (let offset = 1; offset <= left && (high || low); offset++) {
       const neighbour = values[index - offset]
-      if (!Number.isFinite(neighbour)) {
-        isHigh = false
-        isLow = false
-        break
-      }
-      isHigh = isHigh && value > neighbour
-      isLow = isLow && value < neighbour
+      high = high && Number.isFinite(neighbour) && value > neighbour
+      low = low && Number.isFinite(neighbour) && value < neighbour
     }
-    for (let offset = 1; offset <= pivotRight && (isHigh || isLow); offset++) {
+    for (let offset = 1; offset <= right && (high || low); offset++) {
       const neighbour = values[index + offset]
-      if (!Number.isFinite(neighbour)) {
-        isHigh = false
-        isLow = false
-        break
-      }
-      isHigh = isHigh && value > neighbour
-      isLow = isLow && value < neighbour
+      high = high && Number.isFinite(neighbour) && value > neighbour
+      low = low && Number.isFinite(neighbour) && value < neighbour
     }
 
-    if (isHigh) {
-      highs.push({ index, value })
-    }
-    if (isLow) {
-      lows.push({ index, value })
-    }
+    if (high) highs.push({ index, value })
+    if (low) lows.push({ index, value })
   }
-
   return { highs, lows }
 }
 
@@ -185,98 +164,75 @@ function lineValueAt (line, index) {
   return line.first.value + line.slope * (index - line.first.index)
 }
 
-function countTouches (pivots, firstIndex, lastIndex, line, tolerance) {
-  let touches = 0
-  for (const pivot of pivots) {
-    if (pivot.index < firstIndex || pivot.index > lastIndex) {
-      continue
-    }
-    if (Math.abs(pivot.value - lineValueAt(line, pivot.index)) <= tolerance) {
-      touches++
-    }
-  }
-  return touches
-}
-
-function isLineBroken (values, line, type, tolerance, confirmationBars, lastIndex) {
-  let consecutiveBreaks = 0
-  for (let index = line.first.index; index <= lastIndex; index++) {
+function isBroken (values, line, type, settings, validationLastIndex) {
+  let consecutive = 0
+  for (let index = line.first.index; index <= validationLastIndex; index++) {
     const value = values[index]
     if (!Number.isFinite(value)) {
-      consecutiveBreaks = 0
+      consecutive = 0
       continue
     }
-    const projectedValue = lineValueAt(line, index)
+    const projected = lineValueAt(line, index)
     const broken = type === 'resistance'
-      ? value > projectedValue + tolerance
-      : value < projectedValue - tolerance
-
-    consecutiveBreaks = broken ? consecutiveBreaks + 1 : 0
-    if (consecutiveBreaks >= confirmationBars) {
+      ? value > projected + settings.lineTolerance
+      : value < projected - settings.lineTolerance
+    consecutive = broken ? consecutive + 1 : 0
+    if (consecutive >= settings.breakoutConfirmationBars) {
       return true
     }
   }
   return false
 }
 
-function findBestTrendLine (values, pivots, type, settings) {
-  if (pivots.length < 2) {
-    return null
-  }
+function countTouches (pivots, line, lastIndex, tolerance) {
+  return pivots.reduce((count, pivot) => {
+    if (pivot.index < line.first.index || pivot.index > lastIndex) {
+      return count
+    }
+    return Math.abs(pivot.value - lineValueAt(line, pivot.index)) <= tolerance
+      ? count + 1
+      : count
+  }, 0)
+}
 
-  const lastIndex = values.length - 1
-  let bestLine = null
+function findBestLine (values, pivots, type, settings) {
+  const currentIndex = values.length - 1
+  let best = null
 
-  for (let firstPivotIndex = 0; firstPivotIndex < pivots.length - 1; firstPivotIndex++) {
-    const first = pivots[firstPivotIndex]
-    for (let secondPivotIndex = firstPivotIndex + 1; secondPivotIndex < pivots.length; secondPivotIndex++) {
-      const second = pivots[secondPivotIndex]
+  for (let firstIndex = 0; firstIndex < pivots.length - 1; firstIndex++) {
+    const first = pivots[firstIndex]
+    for (let secondIndex = firstIndex + 1; secondIndex < pivots.length; secondIndex++) {
+      const second = pivots[secondIndex]
       const span = second.index - first.index
-      if (span < settings.minBarsBetweenPivots) {
-        continue
-      }
+      if (span < settings.minBarsBetweenPivots) continue
 
       const difference = second.value - first.value
-      const correctDirection = type === 'resistance'
+      const directionIsValid = type === 'resistance'
         ? difference <= -settings.minRsiDifference
         : difference >= settings.minRsiDifference
-      if (!correctDirection) {
-        continue
-      }
+      if (!directionIsValid) continue
 
-      const line = {
-        first,
-        second,
-        slope: difference / span
-      }
-      const projectedLastValue = lineValueAt(line, lastIndex)
-      if (projectedLastValue < 0 || projectedLastValue > 100) {
-        continue
-      }
-      if (isLineBroken(values, line, type, settings.lineTolerance, settings.breakoutConfirmationBars, lastIndex)) {
-        continue
-      }
+      const line = { first, second, slope: difference / span }
+      const validationLastIndex = settings.extendRight ? currentIndex : second.index
+      const projectedLast = lineValueAt(line, validationLastIndex)
+      if (projectedLast < 0 || projectedLast > 100) continue
+      if (isBroken(values, line, type, settings, validationLastIndex)) continue
 
-      const touches = countTouches(pivots, first.index, lastIndex, line, settings.lineTolerance)
-      if (touches < settings.minTouches) {
-        continue
-      }
+      const touches = countTouches(pivots, line, validationLastIndex, settings.lineTolerance)
+      if (touches < settings.minTouches) continue
 
-      const barsSinceSecondPivot = lastIndex - second.index
-      const score = touches * 25 + Math.min(span, settings.lookbackBars) * 0.08 - barsSinceSecondPivot * 0.12
-      if (bestLine === null || score > bestLine.score) {
-        bestLine = { ...line, score, touches }
+      const age = currentIndex - second.index
+      const score = touches * 25 + Math.min(span, settings.lookbackBars) * 0.08 - age * 0.12
+      if (best === null || score > best.score) {
+        best = { ...line, touches, score }
       }
     }
   }
-
-  return bestLine
+  return best
 }
 
-function applyTrendLine (results, line, key, extendRight) {
-  if (line === null) {
-    return
-  }
+function applyLine (results, line, key, extendRight) {
+  if (line === null) return
   const lastIndex = extendRight ? results.length - 1 : line.second.index
   for (let index = line.first.index; index <= lastIndex; index++) {
     const value = lineValueAt(line, index)
@@ -286,33 +242,37 @@ function applyTrendLine (results, line, key, extendRight) {
   }
 }
 
-function calculateRsi (dataList, indicator) {
+function stateToCalcParams (source) {
+  return [
+    source.period,
+    source.overbought,
+    source.oversold,
+    source.trendEnabled,
+    source.pivotLeft,
+    source.pivotRight,
+    source.minBarsBetweenPivots,
+    source.minRsiDifference,
+    source.lineTolerance,
+    source.minTouches,
+    source.lookbackBars,
+    source.breakoutConfirmationBars,
+    source.extendRight,
+    source.showResistance,
+    source.showSupport
+  ]
+}
+
+function calculateIndicator (dataList, indicator) {
   const [
-    period,
-    overbought,
-    oversold,
-    trendEnabled,
-    pivotLeft,
-    pivotRight,
-    minBarsBetweenPivots,
-    minRsiDifference,
-    lineTolerance,
-    minTouches,
-    lookbackBars,
-    breakoutConfirmationBars,
-    extendRight,
-    showResistance,
-    showSupport
+    period, overbought, oversold, trendEnabled,
+    pivotLeft, pivotRight, minBarsBetweenPivots,
+    minRsiDifference, lineTolerance, minTouches,
+    lookbackBars, breakoutConfirmationBars, extendRight,
+    showResistance, showSupport
   ] = indicator.calcParams
 
   const rsiValues = calculateRsiValues(dataList, period)
-  const results = rsiValues.map(rsi => ({
-    rsi,
-    overbought,
-    midpoint: 50,
-    oversold
-  }))
-
+  const results = rsiValues.map(rsi => ({ rsi, overbought, midpoint: 50, oversold }))
   if (!trendEnabled || dataList.length < period + pivotLeft + pivotRight + 2) {
     return results
   }
@@ -323,98 +283,49 @@ function calculateRsi (dataList, indicator) {
     lineTolerance,
     minTouches,
     lookbackBars,
-    breakoutConfirmationBars
+    breakoutConfirmationBars,
+    extendRight
   }
-  const startIndex = Math.max(period, dataList.length - lookbackBars)
-  const pivots = findPivots(rsiValues, startIndex, pivotLeft, pivotRight)
+  const pivots = findPivots(
+    rsiValues,
+    Math.max(period, dataList.length - lookbackBars),
+    pivotLeft,
+    pivotRight
+  )
 
   if (showResistance) {
-    const resistance = findBestTrendLine(rsiValues, pivots.highs, 'resistance', settings)
-    applyTrendLine(results, resistance, 'trendResistance', extendRight)
+    applyLine(results, findBestLine(rsiValues, pivots.highs, 'resistance', settings), 'trendResistance', extendRight)
   }
   if (showSupport) {
-    const support = findBestTrendLine(rsiValues, pivots.lows, 'support', settings)
-    applyTrendLine(results, support, 'trendSupport', extendRight)
+    applyLine(results, findBestLine(rsiValues, pivots.lows, 'support', settings), 'trendSupport', extendRight)
   }
-
   return results
 }
 
-function stateToCalcParams (state) {
-  return [
-    state.period,
-    state.overbought,
-    state.oversold,
-    state.trendEnabled,
-    state.pivotLeft,
-    state.pivotRight,
-    state.minBarsBetweenPivots,
-    state.minRsiDifference,
-    state.lineTolerance,
-    state.minTouches,
-    state.lookbackBars,
-    state.breakoutConfirmationBars,
-    state.extendRight,
-    state.showResistance,
-    state.showSupport
-  ]
-}
-
 registerIndicator({
-  name: RSI_INDICATOR_NAME,
+  name: INDICATOR_NAME,
   shortName: 'RSI',
   precision: 2,
-  calcParams: stateToCalcParams(DEFAULT_RSI_STATE),
+  calcParams: stateToCalcParams(DEFAULTS),
   minValue: 0,
   maxValue: 100,
   figures: [
-    {
-      key: 'rsi',
-      title: 'RSI: ',
-      type: 'line',
-      styles: () => ({ color: '#7c3aed', size: 2, style: 'solid' })
-    },
-    {
-      key: 'trendResistance',
-      title: 'R-TL: ',
-      type: 'line',
-      styles: () => ({ color: '#ef4444', size: 2, style: 'solid' })
-    },
-    {
-      key: 'trendSupport',
-      title: 'S-TL: ',
-      type: 'line',
-      styles: () => ({ color: '#10b981', size: 2, style: 'solid' })
-    },
-    {
-      key: 'overbought',
-      title: 'OB: ',
-      type: 'line',
-      styles: () => ({ color: 'rgba(242, 54, 69, 0.72)', size: 1, style: 'dashed', dashedValue: [4, 4] })
-    },
-    {
-      key: 'midpoint',
-      title: 'MID: ',
-      type: 'line',
-      styles: () => ({ color: 'rgba(100, 116, 139, 0.50)', size: 1, style: 'dashed', dashedValue: [3, 4] })
-    },
-    {
-      key: 'oversold',
-      title: 'OS: ',
-      type: 'line',
-      styles: () => ({ color: 'rgba(8, 153, 129, 0.72)', size: 1, style: 'dashed', dashedValue: [4, 4] })
-    }
+    { key: 'rsi', title: 'RSI: ', type: 'line', styles: () => ({ color: '#7c3aed', size: 2, style: 'solid' }) },
+    { key: 'trendResistance', title: 'R-TL: ', type: 'line', styles: () => ({ color: '#ef4444', size: 2, style: 'solid' }) },
+    { key: 'trendSupport', title: 'S-TL: ', type: 'line', styles: () => ({ color: '#10b981', size: 2, style: 'solid' }) },
+    { key: 'overbought', title: 'OB: ', type: 'line', styles: () => ({ color: 'rgba(242, 54, 69, 0.72)', size: 1, style: 'dashed', dashedValue: [4, 4] }) },
+    { key: 'midpoint', title: 'MID: ', type: 'line', styles: () => ({ color: 'rgba(100, 116, 139, 0.50)', size: 1, style: 'dashed', dashedValue: [3, 4] }) },
+    { key: 'oversold', title: 'OS: ', type: 'line', styles: () => ({ color: 'rgba(8, 153, 129, 0.72)', size: 1, style: 'dashed', dashedValue: [4, 4] }) }
   ],
-  calc: calculateRsi
+  calc: calculateIndicator
 })
 
-let debugChart = null
+let chart = null
 const originalSetDataLoader = ChartImp.prototype.setDataLoader
 ChartImp.prototype.setDataLoader = function (dataLoader) {
-  debugChart = this
+  chart = this
   return originalSetDataLoader.call(this, dataLoader)
 }
-
 try {
   await import('./main.js')
 } finally {
@@ -423,194 +334,116 @@ try {
 
 const state = readState()
 
-function removeRsi () {
-  debugChart?.removeIndicator({ name: RSI_INDICATOR_NAME })
-}
-
-function createRsi () {
-  if (debugChart === null) {
-    return false
-  }
-  removeRsi()
-  return debugChart.createIndicator({
-    name: RSI_INDICATOR_NAME,
+function recreateIndicator () {
+  if (chart === null) return false
+  chart.removeIndicator({ name: INDICATOR_NAME })
+  return chart.createIndicator({
+    name: INDICATOR_NAME,
     calcParams: stateToCalcParams(state)
   }, {
-    pane: { id: RSI_PANE_ID }
+    pane: { id: PANE_ID }
   }) !== null
 }
 
-function setRsiVisible (visible) {
+function setVisible (visible) {
   state.visible = visible
   if (visible) {
-    if (!createRsi()) {
+    if (!recreateIndicator()) {
       setStatus('Unable to create RSI pane.')
       return
     }
   } else {
-    removeRsi()
+    chart?.removeIndicator({ name: INDICATOR_NAME })
   }
-  saveState(state)
+  saveState()
   renderControl()
 }
 
-function addNumberField (container, controls, key, label, options) {
-  const labelElement = document.createElement('label')
-  labelElement.textContent = label
-
-  const inputElement = document.createElement('input')
-  inputElement.type = 'number'
-  inputElement.name = key
-  inputElement.value = String(state[key])
-  inputElement.min = String(options.min)
-  inputElement.max = String(options.max)
-  inputElement.step = String(options.step ?? 1)
-  inputElement.setAttribute('aria-label', label)
-  labelElement.appendChild(inputElement)
-  container.appendChild(labelElement)
-  controls[key] = { element: inputElement, ...options }
+function numberField (key, label, step = 1) {
+  const [min, max] = NUMBER_RULES[key]
+  return `<label>${label}<input name="${key}" type="number" min="${min}" max="${max}" step="${step}" value="${state[key]}"></label>`
 }
 
-function addCheckboxField (container, controls, key, label) {
-  const labelElement = document.createElement('label')
-  labelElement.className = 'rsi-checkbox-field'
-
-  const inputElement = document.createElement('input')
-  inputElement.type = 'checkbox'
-  inputElement.name = key
-  inputElement.checked = state[key]
-  inputElement.setAttribute('aria-label', label)
-  labelElement.appendChild(inputElement)
-
-  const textElement = document.createElement('span')
-  textElement.textContent = label
-  labelElement.appendChild(textElement)
-
-  container.appendChild(labelElement)
-  controls[key] = { element: inputElement, checkbox: true }
+function checkboxField (key, label) {
+  return `<label class="rsi-checkbox-field"><input name="${key}" type="checkbox"${state[key] ? ' checked' : ''}><span>${label}</span></label>`
 }
 
-function readFormSettings (controls) {
-  const nextState = {}
-  for (const [key, control] of Object.entries(controls)) {
-    if (control.checkbox) {
-      nextState[key] = control.element.checked
-      continue
-    }
-    const value = Number(control.element.value)
-    if (!Number.isFinite(value) || value < control.min || value > control.max) {
-      return null
-    }
-    nextState[key] = control.integer ? Math.round(value) : value
+function readForm (form) {
+  const next = { ...state }
+  for (const [key, [min, max, integer]] of Object.entries(NUMBER_RULES)) {
+    const value = Number(form.elements[key].value)
+    if (!Number.isFinite(value) || value < min || value > max) return null
+    next[key] = integer ? Math.round(value) : value
   }
-  if (nextState.oversold >= nextState.overbought) {
-    return null
+  for (const key of BOOLEAN_KEYS.filter(key => key !== 'visible')) {
+    next[key] = form.elements[key].checked
   }
-  return nextState
+  return next.oversold < next.overbought ? next : null
 }
 
 function renderControl () {
-  const controlsElement = document.getElementById('indicator-controls')
-  if (controlsElement === null) {
-    return
-  }
-
+  const host = document.getElementById('indicator-controls')
+  if (host === null) return
   document.getElementById('rsi-indicator-control')?.remove()
 
-  const itemElement = document.createElement('div')
-  itemElement.id = 'rsi-indicator-control'
-  itemElement.className = `indicator-control${state.visible ? '' : ' hidden'}`
+  const item = document.createElement('div')
+  item.id = 'rsi-indicator-control'
+  item.className = `indicator-control${state.visible ? '' : ' hidden'}`
+  item.innerHTML = `
+    <span class="indicator-name">RSI Auto TL</span>
+    <details class="indicator-settings rsi-indicator-settings">
+      <summary title="RSI and auto trend line settings" aria-label="RSI and auto trend line settings">⚙</summary>
+      <form class="indicator-settings-panel rsi-settings-panel">
+        <div class="rsi-settings-grid">
+          ${numberField('period', 'RSI period')}
+          ${numberField('overbought', 'Overbought', 0.5)}
+          ${numberField('oversold', 'Oversold', 0.5)}
+          ${numberField('pivotLeft', 'Pivot left')}
+          ${numberField('pivotRight', 'Pivot right')}
+          ${numberField('minBarsBetweenPivots', 'Min pivot bars')}
+          ${numberField('minRsiDifference', 'Min RSI move', 0.5)}
+          ${numberField('lineTolerance', 'Line tolerance', 0.1)}
+          ${numberField('minTouches', 'Min touches')}
+          ${numberField('lookbackBars', 'Lookback bars')}
+          ${numberField('breakoutConfirmationBars', 'Breakout bars')}
+          ${checkboxField('trendEnabled', 'Auto trend lines')}
+          ${checkboxField('extendRight', 'Extend right')}
+          ${checkboxField('showResistance', 'Resistance line')}
+          ${checkboxField('showSupport', 'Support line')}
+        </div>
+        <div class="rsi-settings-actions">
+          <span class="rsi-settings-hint">Confirmed pivots only. No LLM. A pivot is final after the configured right-side bars close.</span>
+          <button class="indicator-icon-button" type="submit" title="Apply RSI settings" aria-label="Apply RSI settings">✓</button>
+        </div>
+      </form>
+    </details>
+    <button class="indicator-icon-button rsi-visibility-button" type="button" title="${state.visible ? 'Hide RSI' : 'Show RSI'}" aria-label="${state.visible ? 'Hide RSI' : 'Show RSI'}">${state.visible ? '◉' : '○'}</button>
+  `
 
-  const nameElement = document.createElement('span')
-  nameElement.className = 'indicator-name'
-  nameElement.textContent = 'RSI Auto TL'
-  itemElement.appendChild(nameElement)
-
-  const settingsElement = document.createElement('details')
-  settingsElement.className = 'indicator-settings rsi-indicator-settings'
-
-  const summaryElement = document.createElement('summary')
-  summaryElement.title = 'RSI and auto trend line settings'
-  summaryElement.setAttribute('aria-label', summaryElement.title)
-  summaryElement.appendChild(createIcon('settings'))
-  settingsElement.appendChild(summaryElement)
-
-  const formElement = document.createElement('form')
-  formElement.className = 'indicator-settings-panel rsi-settings-panel'
-
-  const fieldsElement = document.createElement('div')
-  fieldsElement.className = 'rsi-settings-grid'
-  const controls = {}
-
-  addNumberField(fieldsElement, controls, 'period', 'RSI period', { min: 2, max: 500, integer: true })
-  addNumberField(fieldsElement, controls, 'overbought', 'Overbought', { min: 0, max: 100, step: 0.5 })
-  addNumberField(fieldsElement, controls, 'oversold', 'Oversold', { min: 0, max: 100, step: 0.5 })
-  addNumberField(fieldsElement, controls, 'pivotLeft', 'Pivot left', { min: 1, max: 20, integer: true })
-  addNumberField(fieldsElement, controls, 'pivotRight', 'Pivot right', { min: 1, max: 20, integer: true })
-  addNumberField(fieldsElement, controls, 'minBarsBetweenPivots', 'Min pivot bars', { min: 2, max: 200, integer: true })
-  addNumberField(fieldsElement, controls, 'minRsiDifference', 'Min RSI move', { min: 0, max: 50, step: 0.5 })
-  addNumberField(fieldsElement, controls, 'lineTolerance', 'Line tolerance', { min: 0, max: 20, step: 0.1 })
-  addNumberField(fieldsElement, controls, 'minTouches', 'Min touches', { min: 2, max: 10, integer: true })
-  addNumberField(fieldsElement, controls, 'lookbackBars', 'Lookback bars', { min: 30, max: 5000, integer: true })
-  addNumberField(fieldsElement, controls, 'breakoutConfirmationBars', 'Breakout bars', { min: 1, max: 20, integer: true })
-  addCheckboxField(fieldsElement, controls, 'trendEnabled', 'Auto trend lines')
-  addCheckboxField(fieldsElement, controls, 'extendRight', 'Extend right')
-  addCheckboxField(fieldsElement, controls, 'showResistance', 'Resistance line')
-  addCheckboxField(fieldsElement, controls, 'showSupport', 'Support line')
-
-  formElement.appendChild(fieldsElement)
-
-  const actionsElement = document.createElement('div')
-  actionsElement.className = 'rsi-settings-actions'
-
-  const hintElement = document.createElement('span')
-  hintElement.className = 'rsi-settings-hint'
-  hintElement.textContent = 'Confirmed pivots only; no LLM and no future-bar repaint after pivot confirmation.'
-  actionsElement.appendChild(hintElement)
-
-  const applyButton = document.createElement('button')
-  applyButton.type = 'submit'
-  applyButton.className = 'indicator-icon-button'
-  applyButton.title = 'Apply RSI settings'
-  applyButton.setAttribute('aria-label', applyButton.title)
-  applyButton.appendChild(createIcon('check'))
-  actionsElement.appendChild(applyButton)
-  formElement.appendChild(actionsElement)
-
-  formElement.addEventListener('submit', event => {
+  const details = item.querySelector('details')
+  const form = item.querySelector('form')
+  form.addEventListener('submit', event => {
     event.preventDefault()
-    const nextState = readFormSettings(controls)
-    if (nextState === null) {
+    const next = readForm(form)
+    if (next === null) {
       setStatus('Invalid RSI trend settings. Check limits and keep oversold below overbought.')
       return
     }
-    Object.assign(state, nextState)
-    if (state.visible && !createRsi()) {
+    Object.assign(state, next)
+    if (state.visible && !recreateIndicator()) {
       setStatus('Unable to update RSI pane.')
       return
     }
-    saveState(state)
-    settingsElement.open = false
+    saveState()
+    details.open = false
     setStatus(`RSI ${state.period}; auto trend ${state.trendEnabled ? 'on' : 'off'}; pivots ${state.pivotLeft}/${state.pivotRight}.`)
     renderControl()
   })
-
-  settingsElement.appendChild(formElement)
-  itemElement.appendChild(settingsElement)
-
-  const visibilityButton = document.createElement('button')
-  visibilityButton.type = 'button'
-  visibilityButton.className = 'indicator-icon-button'
-  visibilityButton.title = state.visible ? 'Hide RSI' : 'Show RSI'
-  visibilityButton.setAttribute('aria-label', visibilityButton.title)
-  visibilityButton.appendChild(createIcon(state.visible ? 'eye' : 'eyeOff'))
-  visibilityButton.addEventListener('click', () => setRsiVisible(!state.visible))
-  itemElement.appendChild(visibilityButton)
-
-  controlsElement.appendChild(itemElement)
+  item.querySelector('.rsi-visibility-button').addEventListener('click', () => setVisible(!state.visible))
+  host.appendChild(item)
 }
 
-if (state.visible && !createRsi()) {
+if (state.visible && !recreateIndicator()) {
   setStatus('Unable to create RSI pane.')
 }
 renderControl()
