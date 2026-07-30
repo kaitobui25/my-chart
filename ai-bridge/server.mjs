@@ -63,6 +63,10 @@ function providerSummaries () {
   }))
 }
 
+function normalizeMode (value) {
+  return value === 'analyze' ? 'analyze' : 'chat'
+}
+
 async function handleChat (request, response, origin) {
   const body = await readJson(request)
   const provider = providers.get(body.provider)
@@ -73,7 +77,8 @@ async function handleChat (request, response, origin) {
   const status = provider.status()
   if (!status.available) return sendJson(response, 503, { error: status.reason, code: 'PROVIDER_UNAVAILABLE' }, origin)
 
-  const prompt = buildPrompt({ mode: body.mode, message: body.message, context: body.context })
+  const mode = normalizeMode(body.mode)
+  const prompt = buildPrompt({ mode, message: body.message, context: body.context })
   let timeout
   const timeoutPromise = new Promise((_, reject) => {
     timeout = setTimeout(() => {
@@ -88,6 +93,9 @@ async function handleChat (request, response, origin) {
     const result = await Promise.race([
       provider.chat({
         sessionKey: body.sessionKey,
+        mode,
+        model: body.model,
+        reasoningEffort: body.reasoningEffort,
         prompt,
         context: body.context,
         screenshotDataUrl: body.screenshotDataUrl,
@@ -95,11 +103,29 @@ async function handleChat (request, response, origin) {
       }),
       timeoutPromise
     ])
-    sendJson(response, 200, { provider: provider.id, ...normalizeModelResponse(result) }, origin)
+    sendJson(response, 200, { provider: provider.id, mode, ...normalizeModelResponse(result, mode) }, origin)
   } finally {
     clearTimeout(timeout)
     sessions.finishRequest(body.sessionKey)
   }
+}
+
+async function handleCodexOptions (response, origin) {
+  const provider = providers.get('codex')
+  const status = provider.status()
+  if (!status.available) return sendJson(response, 503, { error: status.reason, code: 'PROVIDER_UNAVAILABLE' }, origin)
+  return sendJson(response, 200, await provider.options(), origin)
+}
+
+async function handleCodexStatus (request, response, origin) {
+  const provider = providers.get('codex')
+  const status = provider.status()
+  if (!status.available) return sendJson(response, 503, { error: status.reason, code: 'PROVIDER_UNAVAILABLE' }, origin)
+  const body = await readJson(request)
+  return sendJson(response, 200, await provider.accountStatus({
+    model: body.model,
+    reasoningEffort: body.reasoningEffort
+  }), origin)
 }
 
 const server = http.createServer(async (request, response) => {
@@ -125,6 +151,12 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname === '/providers') {
       return sendJson(response, 200, { providers: providerSummaries() }, origin)
+    }
+    if (request.method === 'GET' && url.pathname === '/providers/codex/options') {
+      return await handleCodexOptions(response, origin)
+    }
+    if (request.method === 'POST' && url.pathname === '/providers/codex/status') {
+      return await handleCodexStatus(request, response, origin)
     }
     if (request.method === 'POST' && url.pathname === '/chat') {
       return await handleChat(request, response, origin)
