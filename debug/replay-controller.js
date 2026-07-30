@@ -69,14 +69,17 @@ export default class ReplayController {
       return false
     }
 
+    const viewport = this.#captureRightGap()
     this.currentIndex += 1
     const nextBar = this.fullData[this.currentIndex]
+
     if (typeof this.subscriber === 'function') {
       this.subscriber(nextBar)
+      this.#consumeRightGap(viewport)
     } else {
       this.chart.resetData()
+      this.#scrollToCurrentBar()
     }
-    this.#scrollToCurrentBar()
 
     if (this.currentIndex >= this.fullData.length - 1) {
       this.pause(false)
@@ -264,6 +267,22 @@ export default class ReplayController {
         this.#scheduleNext()
       }
     }, delay)
+  }
+
+  #captureRightGap () {
+    const distance = Number(this.chart.getOffsetRightDistance?.() ?? 0)
+    const barSpace = Number(this.chart.getBarSpace?.().bar ?? 0)
+    return {
+      distance: Number.isFinite(distance) ? Math.max(0, distance) : 0,
+      barSpace: Number.isFinite(barSpace) ? Math.max(0, barSpace) : 0
+    }
+  }
+
+  #consumeRightGap ({ distance, barSpace }) {
+    if (distance <= 0 || barSpace <= 0 || typeof this.chart.scrollByDistance !== 'function') {
+      return
+    }
+    this.chart.scrollByDistance(Math.min(distance, barSpace), 0)
   }
 
   #scrollToCurrentBar () {
