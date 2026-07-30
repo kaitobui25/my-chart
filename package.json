@@ -64,7 +64,7 @@
     "build": "pnpm clean && pnpm build-core && pnpm build-dts",
     "docs:dev": "pnpm -F=docs dev",
     "docs:build": "pnpm build-umd:prod && pnpm -F=docs build",
-    "docs:preview": "pnpm build-umd:prod && pnpm -F=docs preview",
+    "docs:preview": "pnpm -F=docs preview",
     "docs:deploy": "pnpm docs:build && gh-pages -d website",
     "debug": "vite --host 0.0.0.0 debug",
     "ai:bridge": "node ai-bridge/server.mjs",
